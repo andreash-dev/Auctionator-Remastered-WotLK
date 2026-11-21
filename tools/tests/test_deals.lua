@@ -306,12 +306,15 @@ check(not Atr_TradingLogs.sidebar,'Logs does not reserve a cramped sidebar')
 check(Atr_TradingLogs.backdrop~=nil,'vanilla receives a clean opaque replacement backdrop')
 check(not atlas:IsShown() and not AuctionFramePortrait:IsShown(),'vanilla atlas and actual portrait hidden on Logs')
 check(AuctionFrameCloseButton:IsShown(),'native header close button remains usable')
+check(AuctionFrameCloseButton.points[1][2]==Atr_TradingLogs and AuctionFrameCloseButton.points[1][4]==-2 and AuctionFrameCloseButton.points[1][5]==-2,'stock close X follows Logs upper-right corner')
+check(AuctionFrameCloseButton:GetFrameLevel()>Atr_TradingLogs:GetFrameLevel(),'close X is above overlay content')
 check(Atr_LogsCloseButton.text=='Close','single custom close control is a footer button, not a second header X')
 local logRow=visibleLogs()[1]
 check(logRow.fields[4].width>=110 and logRow.fields[5].width>=118,'full-size numeric price columns')
 local bg={bgFile='native-background',edgeFile='native-border'}
 Atr_AuctionFrameTab_OnClick()
 check(atlas:IsShown() and AuctionFramePortrait:IsShown() and not originallyHidden:IsShown(),'vanilla decoration restores exactly on ordinary tabs')
+check(AuctionFrameCloseButton:GetFrameLevel()==1 and #AuctionFrameCloseButton.points==0,'close X original layer and anchors restored on ordinary tabs')
 AuctionFrameBrowse.RightBackground={GetBackdrop=function() return bg end,GetBackdropColor=function() return .1,.1,.1,.8 end}
 AuctionFrame.backdrop=widget()
 Atr_AuctionFrameTab_OnClick();AuctionFrameTab8.scripts.OnClick()

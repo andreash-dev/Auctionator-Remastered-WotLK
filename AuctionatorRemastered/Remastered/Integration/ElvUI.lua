@@ -104,6 +104,32 @@ local function skinLiveButtons()
         end
     end
 end
+-- Stock-only spacing. ElvUI keeps its existing layout and skin-owned anchors.
+local function fixNativeSellLayout()
+    local skinned=ElvUI and AuctionFrame and AuctionFrame.backdrop
+        and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
+    if skinned or not Atr_Main_Panel or not Atr_Main_Panel:IsShown()
+        or not Atr_IsTabSelected or not Atr_IsTabSelected(1)
+        or not Atr_SellControls or not Atr_SellControls:IsShown() then return end
+    local controls=Atr_SellControls
+    local function at(name,x,y,width,height)
+        place(name,controls,'TOPLEFT','TOPLEFT',x,-y,width,height)
+    end
+    at('Atr_StackPriceText',10,76)
+    at('Atr_StackPrice',14,90)
+    at('Atr_ItemPriceText',10,118)
+    at('Atr_ItemPrice',14,132)
+    at('Atr_ItemsOwned_Text',10,156,170,14)
+    if Atr_ItemsOwned_Text then Atr_ItemsOwned_Text:SetJustifyH('CENTER') end
+    at('Atr_Batch_Stacksize_Text',55,176,78,20)
+    at('Atr_Batch_NumAuctions',12,176,40,20)
+    at('Atr_Batch_Stacksize',137,176,40,20)
+    at('Atr_Batch_MaxAuctions_Text',12,198,60,12)
+    at('Atr_Batch_MaxStacksize_Text',117,198,60,12)
+    if Atr_Batch_MaxStacksize_Text then Atr_Batch_MaxStacksize_Text:SetJustifyH('RIGHT') end
+    at('Atr_CreateAuctionButton',12,214,166,26)
+end
+
 local function fixLayout()
     if not ElvUI or not Atr_Main_Panel or not Atr_Main_Panel:IsShown() then return end
     -- Only correct a skinned panel; leave the unskinned UI alone.
@@ -317,6 +343,165 @@ AuctionatorRemastered.Legacy.Hook("Atr_Buy_Confirm_Update",function()
     if Atr_Buy_Confirm_Frame and Atr_Buy_Confirm_Frame:IsShown() then updateBuyDialogLabels() end
 end)
 
+-- A reversible Deals-style shell for all three stock Auctionator panes.
+local nativeBuy={regions={},seen={},backdrops={},stripes={},geometry={}}
+local function restoreNativeBuy()
+    if not nativeBuy.active then return end
+    Atr_AnalysisEnd(nativeBuy.artwork or {})
+    for _,saved in ipairs(nativeBuy.regions) do
+        if saved.shown then saved.region:Show() else saved.region:Hide() end
+    end
+    for frame,saved in pairs(nativeBuy.backdrops) do
+        frame:SetBackdrop(saved.backdrop)
+        if saved.color then frame:SetBackdropColor(unpack(saved.color)) end
+        if saved.border then frame:SetBackdropBorderColor(unpack(saved.border)) end
+    end
+    for frame,saved in pairs(nativeBuy.geometry) do
+        frame:ClearAllPoints()
+        for _,point in ipairs(saved.points) do frame:SetPoint(unpack(point)) end
+        frame:SetWidth(saved.width);frame:SetHeight(saved.height)
+    end
+    nativeBuy.geometry={}
+    for _,stripe in pairs(nativeBuy.stripes) do stripe:Hide() end
+    nativeBuy.shell:Hide()
+    nativeBuy.active=false;nativeBuy.regions={};nativeBuy.seen={};nativeBuy.backdrops={}
+end
+local function syncNativeBuyHeadings()
+    if not nativeBuy.active then return end
+    if Atr_HeadingsBar and Atr_HeadingsBar:IsShown() then nativeBuy.shell.headings:Show()
+    else nativeBuy.shell.headings:Hide() end
+end
+local function styleNativeBuy()
+    local skinned=ElvUI and AuctionFrame and AuctionFrame.backdrop
+        and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
+    local active=not skinned and Atr_Main_Panel and Atr_Main_Panel:IsShown()
+        and Atr_IsTabSelected and (Atr_IsTabSelected(3) or Atr_IsTabSelected(1) or Atr_IsTabSelected(2))
+    if not active then restoreNativeBuy();return end
+    local selling,undercutting=Atr_IsTabSelected(1),Atr_IsTabSelected(2)
+    local mode=selling and 1 or (undercutting and 2 or 3)
+    if nativeBuy.active and nativeBuy.mode~=mode then restoreNativeBuy() end
+    if not Atr_AnalysisBegin or not Atr_AnalysisFit or not Atr_AnalysisBackdrop then return end
+    local function hide(region)
+        if not region then return end
+        if not nativeBuy.seen[region] then
+            nativeBuy.seen[region]=true
+            nativeBuy.regions[#nativeBuy.regions+1]={region=region,shown=region:IsShown()}
+        end
+        region:Hide()
+    end
+    if not nativeBuy.shell then
+        local shell=CreateFrame('Frame',nil,AuctionFrame)
+        shell:SetFrameLevel(AuctionFrame:GetFrameLevel())
+        shell:EnableMouse(false)
+        nativeBuy.shell=shell
+        shell.results=CreateFrame('Frame',nil,shell)
+        shell.results:SetFrameLevel(shell:GetFrameLevel())
+        shell.results:SetPoint('TOPLEFT',Atr_Main_Panel,'TOPLEFT',0,-75)
+        shell.results:SetPoint('BOTTOMRIGHT',AuctionFrame,'BOTTOMRIGHT',-12,48)
+        Atr_AnalysisBackdrop(shell.results,1)
+        shell.headings=CreateFrame('Frame',nil,shell)
+        shell.headings:SetFrameLevel(shell:GetFrameLevel())
+        shell.headings:SetPoint('LEFT',Atr_HeadingsBar,'LEFT',0,0)
+        shell.headings:SetPoint('RIGHT',Atr_HeadingsBar,'RIGHT',0,0)
+        shell.headings:SetHeight(20)
+        Atr_AnalysisBackdrop(shell.headings,1)
+        if Atr_SellControls then
+            shell.sellSurface=CreateFrame('Frame',nil,shell)
+            shell.sellSurface:SetFrameLevel(shell:GetFrameLevel())
+            shell.sellSurface:SetPoint('TOPLEFT',Atr_SellControls,'TOPLEFT',0,-3)
+            shell.sellSurface:SetPoint('BOTTOMRIGHT',Atr_SellControls,'BOTTOMRIGHT',0,0)
+            Atr_AnalysisBackdrop(shell.sellSurface,1)
+        end
+    end
+    Atr_AnalysisFit(nativeBuy.shell)
+    if not nativeBuy.active then
+        nativeBuy.artwork=Atr_AnalysisBegin(nativeBuy.shell)
+        nativeBuy.active=true
+        nativeBuy.mode=mode
+    end
+    Atr_AnalysisBackdrop(nativeBuy.shell,1,"shell")
+    Atr_AnalysisBackdrop(nativeBuy.shell.results,1,"body")
+    Atr_AnalysisBackdrop(nativeBuy.shell.headings,1,"heading")
+    if nativeBuy.shell.sellSurface then
+        Atr_AnalysisBackdrop(nativeBuy.shell.sellSurface,1,"sidebar")
+    end
+    nativeBuy.shell:Show()
+    if nativeBuy.shell.sellSurface then
+        if selling then nativeBuy.shell.sellSurface:Show() else nativeBuy.shell.sellSurface:Hide() end
+    end
+    if selling and Atr_SellControls then
+        if not nativeBuy.backdrops[Atr_SellControls] then
+            nativeBuy.backdrops[Atr_SellControls]={backdrop=Atr_SellControls:GetBackdrop(),
+                color={Atr_SellControls:GetBackdropColor()},border={Atr_SellControls:GetBackdropBorderColor()}}
+        end
+        Atr_SellControls:SetBackdrop(nil)
+    end
+    -- Match the pair's outer edges to the full-width shopping-list buttons.
+    local full=not selling and not undercutting and Atr_SrchSListButton
+    if full then
+        for _,spec in ipairs({{'Atr_AddToSListButton','BOTTOMLEFT','TOPLEFT'},
+            {'Atr_RemFromSListButton','BOTTOMRIGHT','TOPRIGHT'}}) do
+            local button=_G[spec[1]]
+            if button then
+                if not nativeBuy.geometry[button] then
+                    local saved={width=button:GetWidth(),height=button:GetHeight(),points={}}
+                    for i=1,button:GetNumPoints() do saved.points[i]={button:GetPoint(i)} end
+                    nativeBuy.geometry[button]=saved
+                end
+                -- UIPanelButton artwork has transparent end padding. Match its
+                -- visible ends, and overlap the padding between the two buttons.
+                local inset,overlap=2,2
+                local x=spec[2]=='BOTTOMLEFT' and inset or -inset
+                button:ClearAllPoints();button:SetPoint(spec[2],full,spec[3],x,0)
+                button:SetWidth((full:GetWidth()-inset*2+overlap)/2)
+            end
+        end
+    end
+    -- Align to the live button edge, including differing effective UI scales.
+    local bottom=38
+    local bottomControl=selling and Atr_SellControls or (undercutting and Atr_Hlist or Atr_NewSListButton)
+    if bottomControl and bottomControl:GetBottom() and AuctionFrame:GetBottom() then
+        bottom=(bottomControl:GetBottom()*bottomControl:GetEffectiveScale()
+            -AuctionFrame:GetBottom()*AuctionFrame:GetEffectiveScale())/nativeBuy.shell.results:GetEffectiveScale()
+    end
+    nativeBuy.shell.results:ClearAllPoints()
+    nativeBuy.shell.results:SetPoint('TOPLEFT',Atr_Main_Panel,'TOPLEFT',0,-75)
+    nativeBuy.shell.results:SetPoint('BOTTOMRIGHT',AuctionFrame,'BOTTOMRIGHT',-12,bottom)
+    syncNativeBuyHeadings()
+    hide(Atr_HeadingsBarMiddle)
+    for index=1,4 do
+        local tab=_G['Atr_ListTabsTab'..index]
+        if tab then
+            if not nativeBuy.backdrops[tab] then
+                nativeBuy.backdrops[tab]={backdrop=tab:GetBackdrop(),
+                    color=tab.GetBackdropColor and {tab:GetBackdropColor()},
+                    border=tab.GetBackdropBorderColor and {tab:GetBackdropBorderColor()}}
+            end
+            for _,region in ipairs({tab:GetRegions()}) do
+                if region:IsObjectType('Texture') then hide(region) end
+            end
+            Atr_AnalysisBackdrop(tab,1,"tab")
+        end
+    end
+    for index=1,12 do
+        local row=_G['AuctionatorEntry'..index]
+        if row then
+            local stripe=nativeBuy.stripes[index]
+            if not stripe then
+                stripe=row:CreateTexture(nil,'BACKGROUND');stripe:SetAllPoints(row)
+                stripe:SetTexture(1,1,1,index%2==0 and .035 or 0)
+                nativeBuy.stripes[index]=stripe
+            end
+            if type(ElvUI)~='table' then
+                stripe:SetTexture(.75,.68,.55,index%2==0 and .065 or 0)
+            else
+                stripe:SetTexture(1,1,1,index%2==0 and .035 or 0)
+            end
+            stripe:Show()
+        end
+    end
+end
+
 -- Defer until all tab/skin hooks have finished; never replace their handlers.
 local pending = CreateFrame("Frame")
 pending:Hide()
@@ -332,9 +517,12 @@ pending:SetScript("OnUpdate", function(self)
     end
     if Atr_Buy_Confirm_Frame and Atr_Buy_Confirm_Frame:IsShown() then Atr_StyleBuyConfirmDialog() end
     fixLayout()
+    fixNativeSellLayout()
     styleHistoryList()
+    styleNativeBuy()
 end)
 AuctionatorRemastered.Legacy.Hook("Atr_AuctionFrameTab_OnClick", function()
+    if nativeBuy.active and not (Atr_IsTabSelected(3) or Atr_IsTabSelected(1) or Atr_IsTabSelected(2)) then restoreNativeBuy() end
     if Atr_Main_Panel and not Atr_Main_Panel:IsShown() and moneyOriginal then
         local money = AuctionFrameMoneyFrame
         money:SetParent(moneyOriginal.parent)
@@ -349,16 +537,25 @@ AuctionatorRemastered.Legacy.Hook("Atr_UpdateUI", function()
     -- The core restores 805x341 on ordinary empty-Sell updates, not just tab
     -- switches. Correct it after every update, including when perItem is stable.
     fixDropTarget()
+    syncNativeBuyHeadings()
     local perItem = Atr_ItemPrice and Atr_ItemPrice:IsShown() or false
     if perItem ~= lastPerItem then
         lastPerItem = perItem
         schedule()
     end
 end)
+AuctionatorRemastered.Legacy.Hook("Atr_ListTabOnClick", schedule)
+AuctionatorRemastered.Legacy.Hook("Atr_ShowCurrentAuctions", schedule)
+AuctionatorRemastered.Legacy.Hook("Atr_ShowHistory", schedule)
+AuctionatorRemastered.Legacy.Hook("Atr_ShowSearchSummary", schedule)
 AuctionatorRemastered.Legacy.Hook("Atr_ShowHide_StartingPrice", schedule)
 AuctionatorRemastered.Legacy.Hook("Atr_ShowFullScanFrame",schedule)
 AuctionatorRemastered.Legacy.Hook("Atr_Buy1_Onclick",schedule)
 AuctionatorRemastered.Legacy.Hook("Atr_Init", function()
-    if Atr_Main_Panel then Atr_Main_Panel:HookScript("OnShow", schedule) end
+    if Atr_Main_Panel then
+        Atr_Main_Panel:HookScript("OnShow", schedule)
+        Atr_Main_Panel:HookScript("OnHide", restoreNativeBuy)
+    end
+    if AuctionFrame then AuctionFrame:HookScript("OnHide", restoreNativeBuy) end
     schedule()
 end)

@@ -129,7 +129,7 @@ local function findItem(name)
 end
 local cloth=findItem('Cloth');check(cloth and cloth.need:GetText()=='13' and cloth.cost:GetText()=='1300','before bank visit uses known bags only')
 check(cloth.icon.texture=='ClothIcon','item icons retained')
-check(Atr_BrowserShoppingLists.backdrop.edgeSize==8 and Atr_ShoppingResultsBackground.backdrop.edgeSize==8,'shared browser shell and result theme')
+check(Atr_BrowserShoppingLists.backdrop.edgeSize==2 and Atr_ShoppingResultsBackground.backdrop.edgeSize==2,'shared browser shell and result theme')
 check(Atr_ShoppingResultsBackground.width==831 and cloth.width==823,'rows remain inset within the result border')
 check(Atr_BrowserShoppingItemScroll.ScrollBar.width==18 and Atr_BrowserShoppingItemScroll.ScrollBar.point[2]==Atr_ShoppingResultsBackground,'result scrollbar uses its own outer gutter')
 check(Atr_BrowserShoppingListScroll.ScrollBar.point[2]==Atr_ShoppingListBounds,'list selector scrollbar stays within its management group')

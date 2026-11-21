@@ -144,7 +144,7 @@ If it happens, try again later. **Slow scan** is also available if you want to c
 
 - Intended for the **3.3.5a client**.
 - Browse's **Market %** sorting currently applies to the loaded result page.
-- The standard WoW interface is supported; further visual improvements are planned.
+- The standard WoW interface uses a warm anthracite theme; ElvUI retains its integrated styling.
 
 Please [report issues](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/issues) with reproduction steps, your UI setup, a screenshot and any Lua error.
 

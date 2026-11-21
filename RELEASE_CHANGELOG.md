@@ -4,13 +4,20 @@ A remastered edition of Auctionator 3.1.5 for World of Warcraft: Wrath of the Li
 
 **Auctionator Remastered by Nisho.** Based on the original Auctionator by **Zirco (Thunderhorn US)**. Original contributor credits are retained.
 
-## Next update — Unreleased
+## 0.9.0-beta.2 — 2026-11-21
 
-- Fix a bag-update Lua error during disenchanting in groups: track only the player's own Disenchant casts and require a valid before-cast bag snapshot before comparing inventory changes.
+### Interface
 
-- Fix Sell listings remaining stale after posting: use server creation acknowledgements and changes in the loaded owner list alongside multi-sell progress to update the visible results without a manual refresh.
-- Reconcile overlapping posting confirmations so single auctions and batches are inserted and logged only once.
-- Stop adding an unconfirmed extra auction after a failed batch; record only confirmed postings and clear pending confirmations when the auction house closes.
+- Introduce a warm anthracite standard-WoW theme with distinct content panels and stronger bronze-grey borders across Buy, Sell, Undercuts, Deals, Trading Logs, Full Scan, Offline Browser, Shopping Planner and price history.
+- Preserve the existing ElvUI appearance and layout.
+- Tidy Sell's pricing and quantity controls, keep maximum-quantity labels clear of dividers, and align Buy's shopping-list buttons and panel edges.
+- Place the close X consistently in the upper-right corner of the updated auction-house views.
+
+### Fixes
+
+- Fix a bag-update Lua error when other group members disenchant items.
+- Refresh Sell results after confirmed auction postings, including single auctions and batches, without requiring a manual refresh.
+- Avoid counting overlapping posting confirmations twice or adding unconfirmed auctions after a failed batch.
 
 ## Remastered database
 

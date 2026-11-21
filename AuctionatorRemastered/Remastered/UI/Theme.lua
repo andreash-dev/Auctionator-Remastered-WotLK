@@ -6,7 +6,21 @@ function Atr_AnalysisSkin(control, kind)
     local method = ok and skins and skins['Handle'..kind]
     if type(method)=='function' then pcall(method,skins,control) end
 end
-function Atr_AnalysisBackdrop(frame, alpha)
+-- Native-only palette; ElvUI keeps its existing backdrops and colours.
+function Atr_NativeSurface(frame,role,alpha)
+    if type(ElvUI)=='table' then return false end
+    local colors={shell={.075,.070,.065},body={.105,.100,.090},
+        sidebar={.135,.125,.110},heading={.17,.155,.13},tab={.16,.145,.12}}
+    local color=colors[role] or colors.body
+    frame:SetBackdrop({bgFile='Interface\\Buttons\\WHITE8X8',
+        edgeFile='Interface\\Buttons\\WHITE8X8',edgeSize=2,
+        insets={left=2,right=2,top=2,bottom=2}})
+    frame:SetBackdropColor(color[1],color[2],color[3],alpha or 1)
+    if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(.30,.28,.24,1) end
+    return true
+end
+function Atr_AnalysisBackdrop(frame, alpha,role)
+    if Atr_NativeSurface(frame,role,alpha) then return end
     frame:SetBackdrop({bgFile='Interface\\Buttons\\WHITE8X8',edgeFile='Interface\\Tooltips\\UI-Tooltip-Border',tile=false,edgeSize=8,insets={left=2,right=2,top=2,bottom=2}})
     frame:SetBackdropColor(.025,.025,.025,alpha or 1)
     if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(.18,.18,.18,1) end
@@ -68,7 +82,17 @@ function Atr_AnalysisBegin(panel)
             if region:IsObjectType('Texture') then hide(region) end
         end
         for _,suffix in ipairs({'TopLeft','BotLeft','Top','TopRight','Bot','BotRight'}) do hide(_G['AuctionFrame'..suffix]) end
-        Atr_AnalysisBackdrop(panel,1)
+        Atr_AnalysisBackdrop(panel,1,"shell")
+        -- Reuse the real AH close action, above all three stock overlay panels.
+        local close=AuctionFrameCloseButton
+        if close then
+            local saved={region=close,level=close:GetFrameLevel(),shown=close:IsShown(),points={}}
+            for i=1,close:GetNumPoints() do saved.points[i]={close:GetPoint(i)} end
+            hidden[#hidden+1]=saved
+            close:ClearAllPoints();close:SetPoint('TOPRIGHT',panel,'TOPRIGHT',-2,-2)
+            close:SetFrameLevel(math.max(close:GetFrameLevel(),panel:GetFrameLevel()+5))
+            close:Show()
+        end
     end
     hide(AuctionFrameTitleText)
     hide(AuctionPortraitTexture);hide(AuctionFramePortrait);hide(AuctionFramePortraitTexture)
@@ -85,14 +109,21 @@ function Atr_AnalysisBegin(panel)
 end
 function Atr_AnalysisEnd(hidden)
     for _,saved in ipairs(hidden or {}) do
-        if saved.level then saved.region:SetFrameLevel(saved.level)
-        elseif saved.shown then saved.region:Show() end
+        if saved.points then
+            saved.region:ClearAllPoints()
+            for _,point in ipairs(saved.points) do saved.region:SetPoint(unpack(point)) end
+        end
+        if saved.level then saved.region:SetFrameLevel(saved.level) end
+        if saved.shown~=nil then
+            if saved.shown then saved.region:Show() else saved.region:Hide() end
+        end
     end
 end
 
 -- Use the same live shell/result colors as Logs, including before the first
 -- AH visit when only ElvUI's theme colors are available.
 function Atr_StyleOfflineBrowser(frame,body,transparent)
+    if Atr_NativeSurface(frame,body and "body" or "shell",transparent and .8 or 1) then return end
     local source=body and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground or (AuctionFrame and AuctionFrame.backdrop)
     local r,g,b,alpha=.025,.025,.025,1
     if source and source.GetBackdrop and source:GetBackdrop() then

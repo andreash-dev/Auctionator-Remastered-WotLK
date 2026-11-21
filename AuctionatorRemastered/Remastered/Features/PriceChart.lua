@@ -132,6 +132,7 @@ local function createChart()
     -- A solid texture keeps the browser behind this window from bleeding through.
     chart:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=16,edgeSize=24,insets={left=6,right=6,top=6,bottom=6}})
     chart:SetBackdropColor(0.035,0.035,0.035,1)
+    if Atr_NativeSurface then Atr_NativeSurface(chart,"shell") end
     local function text(value,x,y,template)
         local label=chart:CreateFontString(nil,"OVERLAY",template or "GameFontHighlightSmall")
         label:SetPoint("TOPLEFT",chart,"TOPLEFT",x,y);label:SetText(value);return label
@@ -152,6 +153,7 @@ local function createChart()
     lowText=text("",25,-130);highText=text("",280,-130);medianText=text("",510,-130)
     plot=CreateFrame("Frame",nil,chart);plot:SetSize(WIDTH,HEIGHT);plot:SetPoint("TOPLEFT",chart,"TOPLEFT",110,-170)
     plot:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8"});plot:SetBackdropColor(0.06,0.07,0.09,1)
+    if Atr_NativeSurface then Atr_NativeSurface(plot,"body") end
     for i=1,3 do
         local t=rectangle(plot,{0.35,0.35,0.4,0.6});t:SetPoint("BOTTOMLEFT",plot,"BOTTOMLEFT",0,(i-1)*HEIGHT/2);t:SetSize(WIDTH,1)
         local label=chart:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")

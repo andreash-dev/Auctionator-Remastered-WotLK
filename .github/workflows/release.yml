@@ -49,14 +49,18 @@ jobs:
           set -euo pipefail
           notes=".github/release-notes.md"
           test -f "$notes"
-          # Keep beta in the version/tag; publish it as the visible Latest download.
+          # Beta versions are GitHub prereleases; stable versions become Latest.
+          release_flags=(--prerelease=false --latest)
+          if [[ "$RELEASE_VERSION" == *-beta.* ]]; then
+            release_flags=(--prerelease=true --latest=false)
+          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh api --method PATCH "repos/$GH_REPO/git/refs/tags/$RELEASE_TAG" -f sha="$RELEASE_COMMIT" -F force=true >/dev/null
-            gh release edit "$RELEASE_TAG" --title "Auctionator Remastered" --notes-file "$notes"
+            gh release edit "$RELEASE_TAG" --title "Auctionator Remastered $RELEASE_VERSION" --notes-file "$notes"
           else
             gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" \
-              --title "Auctionator Remastered" --notes-file "$notes" --draft
+              --title "Auctionator Remastered $RELEASE_VERSION" --notes-file "$notes" --draft
           fi
           (cd "$(dirname "$RELEASE_ARCHIVE")" && sha256sum "$(basename "$RELEASE_ARCHIVE")") > "$RELEASE_ARCHIVE.sha256"
           gh release upload "$RELEASE_TAG" "$RELEASE_ARCHIVE" "$RELEASE_ARCHIVE.sha256" RELEASE_CHANGELOG.md --clobber
-          gh release edit "$RELEASE_TAG" --draft=false --prerelease=false --latest
+          gh release edit "$RELEASE_TAG" --draft=false "${release_flags[@]}"
