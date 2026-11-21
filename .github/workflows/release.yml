@@ -49,11 +49,8 @@ jobs:
           set -euo pipefail
           notes=".github/release-notes.md"
           test -f "$notes"
-          # Beta versions are GitHub prereleases; stable versions become Latest.
+          # Keep beta in the version and title, but show the newest build as Latest.
           release_flags=(--prerelease=false --latest)
-          if [[ "$RELEASE_VERSION" == *-beta.* ]]; then
-            release_flags=(--prerelease=true --latest=false)
-          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh api --method PATCH "repos/$GH_REPO/git/refs/tags/$RELEASE_TAG" -f sha="$RELEASE_COMMIT" -F force=true >/dev/null
             gh release edit "$RELEASE_TAG" --title "Auctionator Remastered $RELEASE_VERSION" --notes-file "$notes"
