@@ -2,7 +2,7 @@
 ## Title: Auctionator Remastered
 ## Notes: Safe startup for Auctionator Remastered. Detects incompatible Auctionator installations before loading the main module.
 ## Author: Nisho
-## Version: 1.0.0
+## Version: 1.0.1
 ## X-AuctionatorRemastered-Component: Startup
 ## SavedVariables: AUCTIONATOR_REMASTERED_THEME
 ## OptionalDeps: ElvUI

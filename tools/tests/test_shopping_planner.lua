@@ -15,6 +15,8 @@ local function widget(name,parent)
     function f:SetPoint(...) self.point={...} end
     function f:ClearAllPoints() self.point=nil end
     function f:SetWidth(value) self.width=value end
+    function f:SetToplevel(v) self.topLevel=v end
+    function f:Raise() self.raises=(self.raises or 0)+1 end
     function f:GetFrameLevel() return self.level or 50 end
     function f:SetBackdrop(value) self.backdrop=value end
     function f:SetBackdropColor(...) self.backdropColor={...} end
@@ -190,4 +192,11 @@ check(Atr_BrowserShoppingLists.backdropColor[4]==1,'planner can return to opaque
 AuctionatorRemastered.UI.SetBackgroundTransparent('shopping',true)
 check(Atr_BrowserShoppingLists.backdropColor[4]==.8,'Appearance changes immediately update the planner')
 ElvUI=nil
-print('PASS: '..checks..' shopping-plan, inventory, bank-cache and UI checks')
+local planner=Atr_BrowserShoppingLists
+check(planner.topLevel and (planner.raises or 0)>0,'Planner is top-level and raised on show')
+local raised=planner.raises
+Atr_ShowBrowserShoppingLists(list)
+check(planner.raises>raised,'opening an already-visible Planner raises it again')
+planner:Hide();raised=planner.raises;planner:Show()
+check(planner.raises>raised,'direct OnShow raises the Planner')
+print('PASS: '..checks..' shopping-plan, inventory, bank-cache, window order and UI checks')

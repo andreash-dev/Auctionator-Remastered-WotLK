@@ -276,7 +276,7 @@ local function stylePlannerSurface(surface,body)
 end
 local function create()
     frame=CreateFrame("Frame","Atr_BrowserShoppingLists",UIParent)
-    frame:SetSize(1100,570);frame:SetPoint("CENTER");frame:SetFrameStrata("DIALOG");frame:SetFrameLevel(50)
+    frame:SetSize(1100,570);frame:SetPoint("CENTER");frame:SetFrameStrata("DIALOG");frame:SetFrameLevel(50);frame:SetToplevel(true)
     frame:SetClampedToScreen(true);frame:SetMovable(true);frame:EnableMouse(true);frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart",function(self) commitQuantity();self:StartMoving() end)
     frame:SetScript("OnDragStop",function(self) self:StopMovingOrSizing() end)
@@ -443,6 +443,7 @@ local function create()
         if selectedList then StaticPopup_Show("ATR_BROWSER_LIST_DELETE",selectedList.name,nil,selectedList) end
     end,listPanel)
     frame:SetScript("OnShow",function(self)
+        self:Raise()
         updateBackgrounds()
         Atr_StyleAnalysisScroll(listScroll,listBounds);Atr_StyleAnalysisScroll(itemScroll,results)
         self:SetScale(math.max(0.5,math.min(1,(UIParent:GetWidth()-30)/1100,(UIParent:GetHeight()-40)/570)))
@@ -465,7 +466,7 @@ function Atr_ShowBrowserShoppingLists(list)
     commitQuantity()
     if listIndex(list) then selectedList=list;selectedItem=nil;resetScroll(itemScroll) end
     if frame:IsShown() then rebuildPrices();refresh() end
-    CloseDropDownMenus();frame:Show()
+    CloseDropDownMenus();frame:Show();frame:Raise()
 end
 local events=CreateFrame("Frame")
 for _,event in ipairs({"BAG_UPDATE","BANKFRAME_OPENED","BANKFRAME_CLOSED","PLAYERBANKSLOTS_CHANGED","PLAYER_ENTERING_WORLD"}) do events:RegisterEvent(event) end

@@ -3,7 +3,7 @@
 ## LoadOnDemand: 1
 ## Dependencies: AuctionatorRemastered_Startup
 ## X-AuctionatorRemastered-Component: Engine
-## Version: 1.0.0
+## Version: 1.0.1
 ## Author: Nisho (Remastered), Zirco (original)
 ## X-Remastered-By: Nisho
 ## X-Original-Author: Zirco

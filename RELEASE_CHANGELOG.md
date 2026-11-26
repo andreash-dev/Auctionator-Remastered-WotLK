@@ -4,6 +4,13 @@ A remastered edition of Auctionator 3.1.5 for World of Warcraft: Wrath of the Li
 
 **Auctionator Remastered by Nisho.** Based on the original Auctionator by **Zirco (Thunderhorn US)**. Original contributor credits are retained.
 
+## 1.0.1 — 2026-11-26
+
+- Isolate Remastered version requests and replies from original Auctionator's addon-message channel, preventing original version 3.1.5 from being reported as an update to Remastered 1.x.
+- Compare release-version components numerically, so values such as 1.0.10 and 1.0.9 are ordered correctly. Keep the existing shopping-list sharing channel unchanged.
+- Make Shopping Planner a top-level window and raise it when shown or opened again, so it comes in front of Offline Browser when opened through Shopping lists.
+- Preserve saved data and preferences. Installation ZIPs contain only the two addon folders at the root.
+
 ## 1.0.0 — 2026-11-26
 
 The first stable release of Auctionator Remastered for WoW 3.3.5a. The sections below describe the changes since 0.9.0-beta.2; the rest of this document retains the broader Remastered feature history.

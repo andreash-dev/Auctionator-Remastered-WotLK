@@ -36,7 +36,7 @@ local function widget(name,parent)
  function w:CreateTexture(n) return widget(n,self) end
  function w:GetFontString() self.font=self.font or widget(nil,self);return self.font end
  setmetatable(w,{__index=function(_,key)
-  if key:match('^Set') or key:match('^Register') or key:match('^Enable') or key:match('^Disable') or key=='ClearFocus' then return noop end
+  if key:match('^Set') or key:match('^Register') or key:match('^Enable') or key:match('^Disable') or key=='ClearFocus' or key=='Raise' then return noop end
  end})
  return w
 end

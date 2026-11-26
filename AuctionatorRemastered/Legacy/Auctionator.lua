@@ -301,23 +301,22 @@ local versionReminderCalled	= false;	-- make sure we don't bug user more than on
 -----------------------------------------
 
 local function CheckVersion (verString)
-	
-	if (checkVerString == nil) then
-		checkVerString = AuctionatorVersion;
-	end
-	
-	local a,b,c = strsplit (".", verString);
-
-	if (tonumber(a) == nil or tonumber(b) == nil or tonumber(c) == nil) then
-		return false;
-	end
-	
-	if (verString > checkVerString) then
-		checkVerString = verString;
-		return true;	-- out of date
-	end
-	
-	return false;
+ local function parts(value)
+  if type(value)~="string" then return nil; end
+  local a,b,c=value:match("^(%d+)%.(%d+)%.(%d+)$");
+  if not a then return nil; end
+  return {tonumber(a),tonumber(b),tonumber(c)};
+ end
+ local candidate=parts(verString);
+ local current=parts(checkVerString or AuctionatorVersion);
+ if not candidate or not current then return false; end
+ for i=1,3 do
+  if candidate[i]~=current[i] then
+   if candidate[i]>current[i] then checkVerString=verString;return true; end
+   return false;
+  end
+ end
+ return false;
 end
 
 -----------------------------------------
@@ -326,7 +325,7 @@ function Atr_VersionReminder ()
 	if (not versionReminderCalled) then
 		versionReminderCalled = true;
 
-		zc.msg_anm (ZT("There is a more recent version of Auctionator: VERSION").." "..checkVerString);
+		zc.msg_anm ("There is a more recent version of Auctionator Remastered: "..checkVerString);
 	end
 end
 
@@ -346,7 +345,7 @@ function Atr_SendAddon_VREQ (type, target)
 		zz ("sending vreq to", type)
 	end
 	
-	SendAddonMessage ("ATR", "VREQ_"..AuctionatorVersion, type, target);
+	SendAddonMessage ("ATR_RM", "VREQ_"..AuctionatorVersion, type, target);
 	
 end
 
@@ -357,7 +356,7 @@ function Atr_OnChatMsgAddon (...)
 	local	prefix, msg, distribution, sender = ...;
 	
 
-	if (prefix == "ATR") then
+	if (prefix == "ATR" or prefix == "ATR_RM") then
 	
 		local s = string.format ("%s %s |cff88ffff %s |cffffffaa %s|r", prefix, distribution, sender, msg);
 		
@@ -365,18 +364,18 @@ function Atr_OnChatMsgAddon (...)
 			zz (s);
 		end
 		
-		if (zc.StringStartsWith (msg, "VREQ_")) then
-			SendAddonMessage ("ATR", "V_"..AuctionatorVersion, "WHISPER", sender);
+		if (prefix == "ATR_RM" and zc.StringStartsWith (msg, "VREQ_")) then
+			SendAddonMessage ("ATR_RM", "V_"..AuctionatorVersion, "WHISPER", sender);
 		end
 		
-		if (zc.StringStartsWith (msg, "IREQ_")) then
+		if (prefix == "ATR" and zc.StringStartsWith (msg, "IREQ_")) then
 			collectgarbage  ("collect");
 			UpdateAddOnMemoryUsage();
 			local mem  = math.floor(GetAddOnMemoryUsage("AuctionatorRemastered"));
 			SendAddonMessage ("ATR", "I_"..Atr_GetDBsize().."_"..mem.."_"..#AUCTIONATOR_SHOPPING_LISTS.."_"..GetRealmFacInfoString(), "WHISPER", sender)
 		end
 
-		if (zc.StringStartsWith (msg, "V_") and time() - VREQ_sent < 5) then
+		if (prefix == "ATR_RM" and zc.StringStartsWith (msg, "V_") and time() - VREQ_sent < 5) then
 
 			local herVerString = string.sub (msg, 3);
 		--	zc.md ("version found:", herVerString, "   ", sender, "     response time:", time() - VREQ_sent);

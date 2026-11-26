@@ -6,7 +6,7 @@ Developed by **Nisho** for **World of Warcraft 3.3.5a**, and tested on **Warmane
 
 **[Download the addon](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/releases)** · **[Full patch notes](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/blob/main/RELEASE_CHANGELOG.md)** · **[Installation](#installation)**
 
-**Stable release: 1.0.0**
+**Stable release: 1.0.1**
 
 ## Highlights
 
