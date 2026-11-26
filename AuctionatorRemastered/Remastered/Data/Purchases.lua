@@ -44,10 +44,17 @@ end)
 local events = CreateFrame("Frame")
 events:RegisterEvent("CHAT_MSG_SYSTEM")
 events:RegisterEvent("UI_ERROR_MESSAGE")
+events:RegisterEvent("ADDON_ACTION_BLOCKED")
+events:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 events:RegisterEvent("AUCTION_HOUSE_SHOW")
 events:RegisterEvent("AUCTION_HOUSE_CLOSED")
-events:SetScript("OnEvent", function(self, event, message)
+events:SetScript("OnEvent", function(self, event, message, action)
     expire()
+    if event=="ADDON_ACTION_BLOCKED" or event=="ADDON_ACTION_FORBIDDEN" then
+        if (type(message)=="string" and message:find("AuctionatorRemastered",1,true)) or
+            (type(action)=="string" and action:find("PlaceAuctionBid",1,true)) then pending={} end
+        return
+    end
     if event=="AUCTION_HOUSE_SHOW" then startVisit();updateVisitUI();return end
     if event=="AUCTION_HOUSE_CLOSED" then visitActive=false;updateVisitUI();return end
     if event == "UI_ERROR_MESSAGE" then

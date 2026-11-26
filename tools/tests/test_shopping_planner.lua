@@ -175,18 +175,19 @@ for _,surface in ipairs({Atr_BrowserShoppingLists,Atr_ShoppingListsBackground,At
     check(surface.backdropColor[1]==.12 and surface.backdropColor[4]==1,'planner preserves ElvUI colors but overrides transparency on reopen')
 end
 check(Atr_ShoppingListsBackground.height==473,'list panel bottom aligns with Remove entry footer')
-local choice=Atr_ShoppingTransparentBackground
-check(not choice:GetChecked(),'planner defaults to opaque')
+check(Atr_ShoppingTransparentBackground==nil,'opacity shortcut is removed from planner')
+check(not AuctionatorRemastered.UI.BackgroundTransparent('shopping'),'planner defaults to opaque')
 AUCTIONATOR_BROWSER_SETTINGS.browserTransparent=false
-choice:SetChecked(true);choice.scripts.OnClick(choice)
+AuctionatorRemastered.UI.SetBackgroundTransparent('shopping',true)
 for _,surface in ipairs({Atr_BrowserShoppingLists,Atr_ShoppingListsBackground,Atr_ShoppingResultsBackground}) do
-    check(surface.backdropColor[4]==.8,'planner checkbox updates every background immediately')
+    check(surface.backdropColor[4]==.8,'Appearance updates every planner background immediately')
 end
 check(AUCTIONATOR_BROWSER_SETTINGS.shoppingTransparent and AUCTIONATOR_BROWSER_SETTINGS.browserTransparent==false,'planner choice is independent of browser preference')
 Atr_BrowserShoppingLists:Hide();Atr_BrowserShoppingLists:Show()
-check(choice:GetChecked() and Atr_BrowserShoppingLists.backdropColor[4]==.8,'planner preference survives reopening')
-choice:SetChecked(false);choice.scripts.OnClick(choice)
+check(Atr_BrowserShoppingLists.backdropColor[4]==.8,'planner preference survives reopening')
+AuctionatorRemastered.UI.SetBackgroundTransparent('shopping',false)
 check(Atr_BrowserShoppingLists.backdropColor[4]==1,'planner can return to opaque')
-check(choice.point[4]==24 and choice.point[5]==-10,'checkbox uses matching top-left placement')
+AuctionatorRemastered.UI.SetBackgroundTransparent('shopping',true)
+check(Atr_BrowserShoppingLists.backdropColor[4]==.8,'Appearance changes immediately update the planner')
 ElvUI=nil
 print('PASS: '..checks..' shopping-plan, inventory, bank-cache and UI checks')

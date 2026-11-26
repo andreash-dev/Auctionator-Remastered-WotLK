@@ -85,7 +85,7 @@ loader:SetScript("OnEvent",function()
     createIcon()
     if InterfaceOptions_AddCategory then
         local options=CreateFrame("Frame","Atr_OfflineBrowserOptions",UIParent)
-        options.name="Offline Browser";options.parent="Auctionator"
+        options.name="Offline Browser";options.parent="Auctionator Remastered"
         local title=options:CreateFontString(nil,"OVERLAY","GameFontNormalLarge")
         title:SetPoint("TOPLEFT",16,-16);title:SetText("Offline Browser")
         local choice=CreateFrame("CheckButton","Atr_ShowIncompleteBrowserItems",options,"UICheckButtonTemplate")

@@ -188,4 +188,13 @@ for i,key in ipairs({'scanned','added','updated','ignored'}) do
 end
 check(queryCount==beforeStyle and AUCTIONATOR_LAST_SCAN_TIME==last,'styling never queries auctions or changes cooldowns')
 ElvUI=nil
+local opened
+Atr_DatabaseStatusOptions={}
+function InterfaceOptionsFrame_OpenToCategory(category) opened=category end
+gAtr_FullScanState=ATR_FS_STARTED
+Atr_FullScanDatabaseStatus.scripts.OnClick()
+check(opened==nil,'database status navigation is blocked during an active scan')
+gAtr_FullScanState=ATR_FS_NULL
+Atr_FullScanDatabaseStatus.scripts.OnClick()
+check(opened==Atr_DatabaseStatusOptions and not Atr_FullScanFrame:IsShown(),'status shortcut closes the idle dialog and opens the actual status category')
 print('PASS: '..checks..' scan dialog style, countdown and warning checks')

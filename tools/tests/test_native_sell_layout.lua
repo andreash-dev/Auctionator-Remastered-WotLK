@@ -1,5 +1,6 @@
+dofile('AuctionatorRemastered/Remastered/Core/Bootstrap.lua')
 -- Exercise the actual placement code and its stock/skin/tab gates.
-local f=assert(io.open('AuctionatorRemastered/Remastered/Integration/ElvUI.lua'))
+local f=assert(io.open('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua'))
 local source=f:read('*a');f:close()
 local function definition(name)
  return assert(source:match('(local function '..name..'%b().-\nend)'),name)
@@ -34,3 +35,25 @@ ElvUI=nil;AuctionFrame.backdrop=nil;AuctionFrameBrowse.RightBackground=nil
 Atr_SellControls.IsShown=function() return false end
 layout();check(moves==before,'hidden Sell controls are untouched')
 print('PASS: '..checks..' native Sell tab, geometry, loaded-vs-active ElvUI and hidden-pane checks')
+
+-- The decorative header follows the result edges, not the legacy 605px bar.
+local headings,results=frame(),frame()
+headings.GetEffectiveScale=function() return 1 end
+headings.Show=function(self) self.shown=true end
+headings.Hide=function(self) self.shown=false end
+results.GetEffectiveScale=function() return 1 end
+results.GetLeft=function() return 100 end
+results.GetWidth=function() return 590 end
+Atr_HeadingsBar=frame()
+Atr_HeadingsBar.GetLeft=function() return 106 end
+Atr_HeadingsBar.GetEffectiveScale=function() return 1 end
+local state={active=true,shell={headings=headings,results=results}}
+local sync=assert(loadstring('local nativeState=...\n'..definition('syncNativeHeadings')..'\nreturn syncNativeHeadings'))(state)
+sync()
+check(headings.points[4]==-6 and headings.width==590,'native header matches both result edges')
+results.GetEffectiveScale=function() return .8 end
+sync()
+check(math.abs(headings.points[4]+26)<.001 and headings.width==472,'header bounds account for effective scale')
+Atr_HeadingsBar.IsShown=function() return false end
+sync();check(not headings.shown,'hidden headings do not leave an orphan border')
+print('PASS: result header bounds, UI scale and visibility')

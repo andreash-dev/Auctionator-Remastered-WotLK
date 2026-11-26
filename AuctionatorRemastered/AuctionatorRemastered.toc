@@ -3,7 +3,7 @@
 ## LoadOnDemand: 1
 ## Dependencies: AuctionatorRemastered_Startup
 ## X-AuctionatorRemastered-Component: Engine
-## Version: 0.9.0-beta.2
+## Version: 1.0.0
 ## Author: Nisho (Remastered), Zirco (original)
 ## X-Remastered-By: Nisho
 ## X-Original-Author: Zirco
@@ -47,25 +47,37 @@ Legacy\AuctionatorConflicts.lua
 Legacy\AuctionatorAPI.lua
 Legacy\AuctionatorConfig.lua
 Legacy\AuctionatorBuy.lua
+Remastered\Integration\BuyBatch.lua
 
 Legacy\AuctionatorConfig.xml
 
 
 Remastered\Models\Sellers.lua
 Remastered\Integration\AuctionDetails.lua
+Remastered\UI\AuctionLayout.lua
+Remastered\UI\AuctionDialogs.lua
 Remastered\Integration\ElvUI.lua
+Remastered\Integration\AuctionUI.lua
 Remastered\Models\MarketHistory.lua
 Remastered\Integration\MarketHistory.lua
 Remastered\Integration\Database.lua
 Remastered\Integration\FullScan.lua
 Remastered\Integration\ScanControls.lua
 Remastered\Integration\MarketPercent.lua
+Remastered\Models\DatabaseStats.lua
 Remastered\Data\DatabaseStats.lua
 Remastered\Data\OwnAuctions.lua
 Remastered\Data\Purchases.lua
+Remastered\Models\Prospecting.lua
+Remastered\Integration\Prospecting.lua
 Remastered\Models\Deals.lua
 Remastered\UI\Theme.lua
+Remastered\UI\Options.lua
+Remastered\UI\OptionsHelp.lua
+Remastered\UI\OptionsPages.lua
+Remastered\UI\AboutLinks.lua
 Remastered\UI\Appearance.lua
+Remastered\UI\DatabaseStatus.lua
 Remastered\Features\Deals.lua
 Remastered\Models\TradingLogs.lua
 Remastered\Features\TradingLogs.lua

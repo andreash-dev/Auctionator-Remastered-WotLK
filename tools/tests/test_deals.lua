@@ -14,6 +14,10 @@ local hooks={}
 function hooksecurefunc(name,fn) hooks[name]=hooks[name] or {};table.insert(hooks[name],fn) end
 dofile('AuctionatorRemastered/Remastered/Models/Deals.lua')
 dofile('AuctionatorRemastered/Remastered/UI/Theme.lua')
+dofile('AuctionatorRemastered/Remastered/UI/Options.lua')
+dofile('AuctionatorRemastered/Remastered/UI/OptionsHelp.lua')
+dofile('AuctionatorRemastered/Remastered/UI/OptionsPages.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AboutLinks.lua')
 dofile('AuctionatorRemastered/Remastered/UI/Appearance.lua')
 assert(loadfile('AuctionatorRemastered/Remastered/Features/Deals.lua'))()
 local opts={maxMarket=70,minProfit=1,maxAge=24,minDays=3,resale=95,cut=5}
@@ -109,7 +113,7 @@ local function widget(name,parent)
  function w:SetVerticalScroll(n) self.offset=n end
  function w:GetChecked() return self.checked end
  function w:IsObjectType() return false end
- for _,method in ipairs({'SetFrameStrata','SetClampedToScreen','RegisterForDrag','StartMoving','StopMovingOrSizing','RegisterForClicks','LockHighlight','UnlockHighlight','SetHighlightFontObject','SetTexCoord','SetBackdropBorderColor','SetBackdropColor','SetAutoFocus','SetMaxLetters','SetNormalFontObject','SetHighlightTexture','SetAllPoints','SetTexture','SetJustifyH','SetOwner','AddLine'}) do w[method]=function() end end
+ for _,method in ipairs({'SetJustifyV','SetTextColor','SetFrameStrata','SetClampedToScreen','RegisterForDrag','StartMoving','StopMovingOrSizing','RegisterForClicks','LockHighlight','UnlockHighlight','SetHighlightFontObject','SetTexCoord','SetBackdropBorderColor','SetBackdropColor','SetAutoFocus','SetMaxLetters','SetNormalFontObject','SetHighlightTexture','SetAllPoints','SetTexture','SetJustifyH','SetOwner','AddLine'}) do w[method]=function() end end
  return w
 end
 function CreateFrame(kind,name,parent,template)
@@ -176,6 +180,14 @@ local metadata={Better={class='Unclassified',link='item:123:0:0:0:0:0:-45:0'}}
 function Atr_GetBrowserItemMetadata(name) return metadata[name] or {class='Unclassified'} end
 
 -- Load Logs after Deals, in the actual TOC order.
+function UIDropDownMenu_SetWidth(frame,width) frame.menuWidth=width end
+function UIDropDownMenu_JustifyText() end
+function UIDropDownMenu_SetText(frame,text) frame.caption=text end
+function UIDropDownMenu_Initialize(frame,callback) frame.initialize=callback end
+function UIDropDownMenu_CreateInfo() return {} end
+local menuItems={}
+function UIDropDownMenu_AddButton(info) menuItems[#menuItems+1]=info end
+function CloseDropDownMenus() end
 dofile('AuctionatorRemastered/Remastered/Models/TradingLogs.lua')
 assert(loadfile('AuctionatorRemastered/Remastered/Features/TradingLogs.lua'))()
 for _,fn in ipairs(hooks.Atr_Init) do fn() end
@@ -189,7 +201,8 @@ check(Atr_DealsScroll.count==2 and Atr_DealsScroll.visible==14,'results rendered
 local row
 for _,w in ipairs(widgets) do if w.data and w.data.name=='Better' and w.fields and w.icon then row=w end end
 check(row~=nil,'deal row with missing icon still rendered')
-check(Atr_DealsDetails.parent==UIParent and Atr_DealsDetails:IsShown() and Atr_DealsDetails.points[1][2]==Atr_DealsPanel and Atr_DealsDetails.points[2][3]=='BOTTOMRIGHT' and Atr_DealsDetails.height==Atr_DealsPanel.height,'independent details window matches AH height and follows both AH edges by default')
+check(Atr_DealsDetails.parent==Atr_DealsPanel and Atr_DealsDetails:IsShown() and Atr_DealsDetails.points[1][2]==Atr_DealsPanel and Atr_DealsDetails.points[2][3]=='BOTTOMRIGHT' and Atr_DealsDetails.height==Atr_DealsPanel.height,'details shares the Deals parent and matches its height and following anchors')
+check(Atr_DealsDetails:GetFrameLevel()==Atr_DealsPanel:GetFrameLevel()+1 and Atr_DealsDetails.scale==1,'details inherits AH stacking and scale without an independent dialog layer')
 row.scripts.OnEnter(row)
 check(GameTooltip.hyperlink=='item:123:0:0:0:0:0:-45:0','hover renders original item tooltip with exact suffix link')
 check(Atr_DealsDetails.item.text=='Better' and Atr_DealsDetails.values[1].text=='30000','hover automatically updates the separate price details')
@@ -220,7 +233,7 @@ Atr_AuctionFrameMover.scripts.OnDragStart()
 Atr_AuctionFrameMover.scripts.OnDragStop()
 check(moves==1 and stops==1 and Atr_AuctionFrameMover.parent==AuctionFrame,'header dragging moves the AH rather than its controls or details')
 check(Atr_DealsDetails.points[1][2]==Atr_DealsPanel,'details follows the moved auction frame through its relative anchor')
-check(appearanceCategory==Atr_AppearanceOptions and appearanceCategory.name=='Appearance' and appearanceCategory.parent=='Auctionator','Appearance is registered under Auctionator options')
+check(appearanceCategory==Atr_AppearanceOptions and appearanceCategory.name=='Appearance' and appearanceCategory.parent=='Auctionator Remastered','Appearance is registered under Auctionator options')
 check(AUCTIONATOR_SAVEDVARS.auctionFramePosition.y==10,'AH drag saves its placement')
 AuctionFrame:Hide();AuctionFrame:Show()
 check(Atr_AuctionPositionRestore:IsShown(),'opening AH schedules restoration after native layout handlers')
@@ -276,7 +289,7 @@ for i=1,20 do
  table.insert(i%2==0 and AUCTIONATOR_PURCHASES[key].records or AUCTIONATOR_OWN_AUCTIONS[key].records,record)
 end
 AuctionFrameTab8.scripts.OnClick()
-check(Atr_LogsScroll.count==20 and Atr_LogsScroll.visible==13,'all log results retained behind scroll')
+check(Atr_LogsScroll.count==20 and Atr_LogsScroll.visible==12,'all log results retained behind two-row filter toolbar')
 local function visibleLogs()
  local result={}
  for _,w in ipairs(widgets) do if w.parent==Atr_TradingLogs and w.fields and w.shown and w.data then result[#result+1]=w end end
@@ -301,7 +314,38 @@ local _,spent,listed,bought,offered=Atr_GetTradingLogs('All','',30,nil)
 check(spent==11000 and listed==10000 and bought==110 and offered==100,'filtered totals and quantities retain original meaning after sorting')
 Atr_LogsClearSearch.scripts.OnClick()
 check(Atr_LogsScroll.count==20,'clear search restores matching history')
-check(Atr_TradingLogs.results.points[1][4]==10 and Atr_TradingLogs.results.points[1][5]==-106,'Logs list spans full width below top filters')
+-- Multi-select character menu and date inputs use the same filtered totals.
+table.insert(AUCTIONATOR_PURCHASES[key].records,{name='Alt item',stackSize=1,stackPrice=200,when=now,character='Alt'})
+Atr_LogsClearSearch.scripts.OnClick()
+menuItems={};Atr_LogsCharacters.initialize()
+local function menu(label) for _,item in ipairs(menuItems) do if item.text==label then return item end end end
+menu('Alt').func()
+check(Atr_LogsScroll.count==20 and Atr_LogsCharacters.caption=='Nisho','unchecking a character from All keeps the other selected character')
+menu('Nisho').func()
+check(Atr_LogsScroll.count==0 and Atr_LogsCharacters.caption=='No characters','empty character selection is explicit')
+menu('Alt').func()
+check(Atr_LogsScroll.count==1 and Atr_LogsCharacters.caption=='Alt','one character can be selected independently')
+menu('All characters').func()
+check(Atr_LogsScroll.count==21,'All characters restores both ledgers')
+local oldTime,oldDate=time,date
+time=function(value) return value and os.time(value) or now end;date=os.date
+local today=date('%Y-%m-%d',now)
+Atr_LogsDateFrom:SetText(today);Atr_LogsDateTo:SetText(today);Atr_LogsApplyDates.scripts.OnClick()
+check(Atr_LogsScroll.count==21,'same-day From/To includes every matching transaction')
+Atr_LogsDateFrom:SetText('2026-02-30');Atr_LogsApplyDates.scripts.OnClick()
+check(Atr_LogsScroll.count==21,'invalid typed date preserves the active filter')
+Atr_LogsDateFrom:SetText('2026-11-24');Atr_LogsDateTo:SetText('2026-11-20');Atr_LogsApplyDates.scripts.OnClick()
+check(Atr_LogsScroll.count==21,'reversed dates preserve the active filter')
+menu('Only this character').func()
+check(Atr_LogsScroll.count==20,'Only this character remains a quick choice')
+Atr_LogsSearch:SetText('Alt')
+Atr_LogsResetFilters.scripts.OnClick()
+check(Atr_LogsScroll.count==21 and Atr_LogsSearch:GetText()=='' and Atr_LogsDateFrom:GetText()=='' and Atr_LogsDateTo:GetText()=='' and Atr_LogsCharacters.caption=='All characters','Reset clears dates, names and character selection together')
+time,date=oldTime,oldDate
+table.remove(AUCTIONATOR_PURCHASES[key].records)
+Atr_LogsClearSearch.scripts.OnClick()
+
+check(Atr_TradingLogs.results.points[1][4]==10 and Atr_TradingLogs.results.points[1][5]==-160,'Logs list spans full width below two filter rows')
 check(not Atr_TradingLogs.sidebar,'Logs does not reserve a cramped sidebar')
 check(Atr_TradingLogs.backdrop~=nil,'vanilla receives a clean opaque replacement backdrop')
 check(not atlas:IsShown() and not AuctionFramePortrait:IsShown(),'vanilla atlas and actual portrait hidden on Logs')
@@ -317,6 +361,7 @@ check(atlas:IsShown() and AuctionFramePortrait:IsShown() and not originallyHidde
 check(AuctionFrameCloseButton:GetFrameLevel()==1 and #AuctionFrameCloseButton.points==0,'close X original layer and anchors restored on ordinary tabs')
 AuctionFrameBrowse.RightBackground={GetBackdrop=function() return bg end,GetBackdropColor=function() return .1,.1,.1,.8 end}
 AuctionFrame.backdrop=widget()
+ElvUI={{}}
 Atr_AuctionFrameTab_OnClick();AuctionFrameTab8.scripts.OnClick()
 check(Atr_TradingLogs.results.backdrop==bg,'Logs reuses the active Browse result backdrop')
 check(Atr_TradingLogs.backdrop==nil and atlas:IsShown(),'skinned shell keeps its background without stacking an opaque overlay')

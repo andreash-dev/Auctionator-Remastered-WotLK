@@ -309,9 +309,7 @@ local function create()
     local function updateBackgrounds()
         stylePlannerSurface(frame,false);stylePlannerSurface(listPanel,true);stylePlannerSurface(results,true)
     end
-    local backgroundChoice=Atr_CreateBackgroundCheckbox(frame,"Atr_ShoppingTransparentBackground",options().shoppingTransparent==true,function(checked)
-        commitQuantity();options().shoppingTransparent=checked;updateBackgrounds()
-    end)
+    AuctionatorRemastered.UI.RefreshShoppingBackgrounds=updateBackgrounds
     -- The list selector includes its management buttons; its scroll gutter stays inside that group.
     local listBounds=CreateFrame("Frame","Atr_ShoppingListBounds",listPanel)
     listBounds:SetPoint("TOPLEFT",listPanel,"TOPLEFT",6,-46);listBounds:SetSize(174,LIST_ROWS*22)
@@ -445,7 +443,6 @@ local function create()
         if selectedList then StaticPopup_Show("ATR_BROWSER_LIST_DELETE",selectedList.name,nil,selectedList) end
     end,listPanel)
     frame:SetScript("OnShow",function(self)
-        backgroundChoice:SetChecked(options().shoppingTransparent==true)
         updateBackgrounds()
         Atr_StyleAnalysisScroll(listScroll,listBounds);Atr_StyleAnalysisScroll(itemScroll,results)
         self:SetScale(math.max(0.5,math.min(1,(UIParent:GetWidth()-30)/1100,(UIParent:GetHeight()-40)/570)))

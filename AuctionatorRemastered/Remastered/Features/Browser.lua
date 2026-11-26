@@ -36,7 +36,7 @@ local function age(timestamp)
     if seconds < 60 then return "Just now" end
     if seconds < 3600 then return math.floor(seconds / 60).." min ago" end
     if seconds < 86400 then return math.floor(seconds / 3600).." hr ago" end
-    return math.floor(seconds / 86400).." days ago"
+    return AuctionatorRemastered.UI.MarkPriceAge(math.floor(seconds / 86400).." days ago",timestamp)
 end
 local function renderHistory()
     FauxScrollFrame_Update(historyScroll, #history, 4, 18)
@@ -217,13 +217,14 @@ linkEvents:SetScript("OnEvent",function() Atr_InstallBrowserLinkHooks();hookSkil
 hookSkilletLinks()
 
 local function styleBrowserSurface(surface,body)
-    Atr_StyleOfflineBrowser(surface,body,settings().browserTransparent~=false)
+    Atr_StyleOfflineBrowser(surface,body,AuctionatorRemastered.UI.BackgroundTransparent("browser"))
 end
 
 local function createWindow()
     window = CreateFrame("Frame", "Atr_OfflineBrowser", UIParent)
     window:SetSize(980, 600); window:SetPoint("CENTER")
-    window:SetFrameStrata("DIALOG"); window:SetClampedToScreen(true)
+    window:SetFrameStrata("DIALOG"); window:SetFrameLevel(50); window:SetToplevel(true)
+    window:SetClampedToScreen(true)
     window:EnableMouse(true); window:SetMovable(true); window:RegisterForDrag("LeftButton")
     window:SetScript("OnDragStart", function(self) if search then search:ClearFocus() end; self:StartMoving() end)
     window:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
@@ -250,9 +251,6 @@ local function createWindow()
     local title=text(window,"Auctionator Remastered - Browser",0,0,"GameFontNormal")
     title:ClearAllPoints();title:SetPoint("TOP",window,"TOP",0,-12)
     local updateBackgrounds
-    local backgroundChoice=Atr_CreateBackgroundCheckbox(window,"Atr_BrowserTransparentBackground",settings().browserTransparent~=false,function(checked)
-        settings().browserTransparent=checked;updateBackgrounds()
-    end)
     info = text(window, "Saved scan data", 24, -44)
     button(window,"Shopping lists",805,-40,145,function()
         Atr_ShowBrowserShoppingLists()
@@ -490,8 +488,10 @@ local function createWindow()
         styleBrowserSurface(Atr_BrowserResultsBackground,true)
         styleBrowserSurface(detailFrame,true)
     end
+    AuctionatorRemastered.UI.RefreshBrowserBackgrounds=updateBackgrounds
+    AuctionatorRemastered.UI.RefreshBrowserPriceAge=function() render();updateDetails() end
     window:SetScript("OnShow",function(self)
-        backgroundChoice:SetChecked(settings().browserTransparent~=false)
+        self:Raise()
         updateBackgrounds()
         Atr_StyleAnalysisScroll(scroll,Atr_BrowserResultsBackground)
         Atr_StyleAnalysisScroll(categoryScroll,Atr_BrowserCategoryBackground)

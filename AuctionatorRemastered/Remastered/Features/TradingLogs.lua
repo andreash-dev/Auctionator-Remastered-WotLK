@@ -1,5 +1,5 @@
 -- Trading log view; ledger filtering and sorting live in Models/TradingLogs.lua.
-local panel, scroll, summary, empty, search, characterOnly, logTab
+local panel, scroll, summary, empty, search, characterMenu, logTab
 local moneyWasShown
 local hiddenArtwork = {}
 local function hideAHArtwork()
@@ -11,13 +11,21 @@ local function restoreAHArtwork()
 end
 local rows, filters, ranges = {}, {}, {}
 local kind, days, records = "All", 30, {}
+local characters,fromDate,untilDate,dateFrom,dateTo,dateError
+local updatingFilters=false
+local function characterCaption()
+    if not characters then return "All characters" end
+    local count,name=0
+    for character,selected in pairs(characters) do if selected then count=count+1;name=character end end
+    return count==0 and "No characters" or count==1 and name or count.." selected"
+end
 local sortKey, descending, headings = "when", true, {}
 local colors = {Bought = "66ccff", Listed = "ffcc66"}
 local function money(value)
     return gAtrZC.priceToMoneyString(math.floor(value + 0.5))
 end
 local function render()
-    local visibleRows = math.min(13, math.max(1, math.floor((panel:GetHeight() - 154) / 20)))
+    local visibleRows = math.min(13, math.max(1, math.floor((panel:GetHeight() - 208) / 20)))
     FauxScrollFrame_Update(scroll, #records, visibleRows, 20)
     local offset = FauxScrollFrame_GetOffset(scroll)
     for i, row in ipairs(rows) do
@@ -35,10 +43,10 @@ local function render()
     end
 end
 local function refresh(reset)
-    if not panel then return end
+    if not panel or updatingFilters then return end
     local spent, listed, bought, offered
-    records, spent, listed, bought, offered = Atr_GetTradingLogs(kind, search:GetText(), days,
-        characterOnly:GetChecked() and UnitName("player") or nil)
+    records, spent, listed, bought, offered = Atr_GetTradingLogs(kind, search:GetText(), type(days)=="number" and days or nil,
+        characters,fromDate,untilDate)
     Atr_SortTradingLogs(records,sortKey,descending)
     for key,button in pairs(headings) do
         if key==sortKey then
@@ -50,8 +58,9 @@ local function refresh(reset)
     summary:SetText("|cff66ccffSpent:|r "..money(spent).."  ("..bought.." items)    |cffffcc66Listed value:|r "..money(listed).."  ("..offered.." items)")
     empty:SetText(#records == 0 and "No purchases or listings found.\nTry another item, activity type or time range." or "")
     for name, button in pairs(filters) do button:SetText(kind == name and "|cffffffff"..name.."|r" or name) end
+    UIDropDownMenu_SetText(characterMenu,characterCaption())
     for name, button in pairs(ranges) do
-        local active = (name == "All time" and not days) or name == tostring(days).." days"
+        local active = days=="Today" and name=="Today" or not fromDate and not untilDate and ((name=="All time" and not days) or name==tostring(days).." days")
         button:SetText(active and "|cffffffff"..name.."|r" or name)
     end
     render()
@@ -77,11 +86,11 @@ local function makePanel()
     title:ClearAllPoints();title:SetPoint("TOP",panel,"TOP",0,-10)
     panel.results=CreateFrame("Frame",nil,panel)
     panel.results:SetFrameLevel(panel:GetFrameLevel())
-    panel.results:SetPoint("TOPLEFT",panel,"TOPLEFT",10,-106)
+    panel.results:SetPoint("TOPLEFT",panel,"TOPLEFT",10,-160)
     panel.results:SetPoint("BOTTOMRIGHT",panel,"BOTTOMRIGHT",-28,40)
     -- Use the actual skinned Browse result background when available.
     local function resultStyle()
-        local source=AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
+        local source=AuctionatorRemastered.UI.UseElvUI() and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
         if source and source.GetBackdrop and source:GetBackdrop() then
             panel.results:SetBackdrop(source:GetBackdrop())
             panel.results:SetBackdropColor(source:GetBackdropColor())
@@ -91,11 +100,11 @@ local function makePanel()
     panel.resultStyle=resultStyle
     resultStyle()
     text("Activity",281,-32,"GameFontNormalSmall")
-    text("Time range",489,-32,"GameFontNormalSmall")
-    local function filterButton(label,x,width,callback)
-        local button=CreateFrame("Button",nil,panel,"UIPanelButtonTemplate")
+    text("Characters",489,-32,"GameFontNormalSmall")
+    local function filterButton(label,x,width,callback,y,name)
+        local button=CreateFrame("Button",name,panel,"UIPanelButtonTemplate")
         Atr_AnalysisSkin(button,"Button")
-        button:SetSize(width,22);button:SetPoint("TOPLEFT",panel,"TOPLEFT",x,-49)
+        button:SetSize(width,22);button:SetPoint("TOPLEFT",panel,"TOPLEFT",x,-(y or 49))
         button:SetText(label);button:SetScript("OnClick",callback)
         return button
     end
@@ -103,10 +112,19 @@ local function makePanel()
         local selected=name
         filters[name]=filterButton(name,281+(i-1)*63,60,function() kind=selected;refresh(true) end)
     end
-    for i,range in ipairs({7,30,false}) do
+    text("Time range",20,-86,"GameFontNormalSmall")
+    for i,range in ipairs({"Today",7,30,false}) do
         local value=range
-        local label=range and range.." days" or "All time"
-        ranges[label]=filterButton(label,489+(i-1)*66,63,function() days=value or nil;refresh(true) end)
+        local label=range=="Today" and "Today" or range and range.." days" or "All time"
+        ranges[label]=filterButton(label,20+(i-1)*66,63,function()
+            days=value or nil;fromDate=nil;untilDate=nil
+            if value=="Today" then
+                local today=date("%Y-%m-%d")
+                fromDate,untilDate=Atr_ParseTradingLogDate(today)
+            end
+            dateFrom:SetText("");dateTo:SetText("");dateError:SetText("")
+            dateFrom:ClearFocus();dateTo:ClearFocus();refresh(true)
+        end,103)
     end
     search = CreateFrame("EditBox", "Atr_LogsSearch", panel, "InputBoxTemplate")
     Atr_AnalysisSkin(search,"EditBox")
@@ -119,11 +137,78 @@ local function makePanel()
     local clear=CreateFrame("Button","Atr_LogsClearSearch",panel,"UIPanelButtonTemplate")
     Atr_AnalysisSkin(clear,"Button");clear:SetSize(42,22);clear:SetPoint("TOPLEFT",panel,"TOPLEFT",229,-49)
     clear:SetText("Clear");clear:SetScript("OnClick",function() search:SetText("");search:ClearFocus() end)
-    characterOnly = CreateFrame("CheckButton", "Atr_LogsCharacterOnly", panel, "UICheckButtonTemplate")
-    Atr_AnalysisSkin(characterOnly,"CheckBox")
-    characterOnly:SetSize(22,22);characterOnly:SetPoint("TOPLEFT",panel,"TOPLEFT",696,-49)
-    _G[characterOnly:GetName().."Text"]:SetText("This character")
-    characterOnly:SetScript("OnClick", function() refresh(true) end)
+    characterMenu=CreateFrame("Frame","Atr_LogsCharacters",panel,"UIDropDownMenuTemplate")
+    characterMenu:SetPoint("TOPLEFT",panel,"TOPLEFT",469,-47)
+    UIDropDownMenu_SetWidth(characterMenu,170)
+    Atr_AnalysisSkin(characterMenu,"DropDownBox")
+    if AuctionatorRemastered.UI.UseElvUI() then characterMenu:SetWidth(210) end
+    UIDropDownMenu_JustifyText(characterMenu,"LEFT")
+    UIDropDownMenu_Initialize(characterMenu,function()
+        local function action(label,callback)
+            local info=UIDropDownMenu_CreateInfo()
+            info.text=label;info.notCheckable=true;info.func=callback
+            UIDropDownMenu_AddButton(info)
+        end
+        action("All characters",function() characters=nil;CloseDropDownMenus();refresh(true) end)
+        action("Only this character",function() characters={[UnitName("player")]=true};CloseDropDownMenus();refresh(true) end)
+        local names=Atr_GetTradingLogCharacters()
+        for _,name in ipairs(names) do
+            local selectedName=name
+            local info=UIDropDownMenu_CreateInfo()
+            info.text=name;info.isNotRadio=true;info.keepShownOnClick=true
+            info.checked=function() return not characters or characters[selectedName]==true end
+            info.func=function()
+                if not characters then
+                    characters={}
+                    for _,character in ipairs(names) do characters[character]=true end
+                end
+                characters[selectedName]=not characters[selectedName] or nil
+                refresh(true)
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    dateError=text("",642,-103,"GameFontHighlightSmall")
+    dateError:SetWidth(156);dateError:SetHeight(26);dateError:SetTextColor(1,.35,.35)
+    local function applyDates()
+        local first,_,firstError=Atr_ParseTradingLogDate(dateFrom:GetText())
+        local _,last,lastError=Atr_ParseTradingLogDate(dateTo:GetText())
+        if firstError or lastError or first and last and first>=last then
+            dateError:SetText(firstError or lastError or "From must not be after To.")
+            return
+        end
+        days=nil;fromDate=first;untilDate=last;dateError:SetText("")
+        dateFrom:ClearFocus();dateTo:ClearFocus();refresh(true)
+    end
+    local function dateField(name,label,x)
+        local heading=text(label.." (YYYY-MM-DD)",x,-86,"GameFontNormalSmall")
+        heading:SetWidth(120);heading:SetHeight(14)
+        local field=CreateFrame("EditBox",name,panel,"InputBoxTemplate")
+        Atr_AnalysisSkin(field,"EditBox");field:SetSize(96,22)
+        field:SetPoint("TOPLEFT",panel,"TOPLEFT",x+(AuctionatorRemastered.UI.UseElvUI() and 0 or 5),-103)
+        field:SetAutoFocus(false);field:SetMaxLetters(10)
+        field:SetScript("OnEnterPressed",applyDates)
+        field:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
+        local function help(self)
+            GameTooltip:SetOwner(self,"ANCHOR_LEFT")
+            GameTooltip:SetText(label.." date",.9,1,1)
+            GameTooltip:AddLine("Use YYYY-MM-DD. Leave blank for no limit. The To date includes the whole day. Press Enter or Apply to filter.",.5,.5,1,true)
+            GameTooltip:Show()
+        end
+        local area=CreateFrame("Frame",nil,panel);area:SetAllPoints(heading);area:EnableMouse(true)
+        area:SetScript("OnEnter",help);area:SetScript("OnLeave",function() GameTooltip:Hide() end)
+        return field
+    end
+    dateFrom=dateField("Atr_LogsDateFrom","From",310)
+    dateTo=dateField("Atr_LogsDateTo","To",440)
+    filterButton("Apply",560,70,applyDates,103,"Atr_LogsApplyDates")
+    filterButton("Reset filters",696,104,function()
+        updatingFilters=true
+        kind="All";days=30;characters=nil;fromDate=nil;untilDate=nil
+        search:SetText("");dateFrom:SetText("");dateTo:SetText("");dateError:SetText("")
+        search:ClearFocus();dateFrom:ClearFocus();dateTo:ClearFocus()
+        updatingFilters=false;refresh(true)
+    end,49,"Atr_LogsResetFilters")
     summary=text("",198,0,"GameFontHighlightSmall")
     summary:ClearAllPoints();summary:SetPoint("BOTTOMLEFT",panel,"BOTTOMLEFT",20,14)
     summary:SetWidth(690);summary:SetHeight(18);summary:SetJustifyH("LEFT")
@@ -132,7 +217,7 @@ local function makePanel()
     for _,spec in ipairs(specs) do
         local key=spec[4]
         local button=CreateFrame("Button","Atr_LogsSort_"..key,panel)
-        button:SetPoint("TOPLEFT",panel,"TOPLEFT",spec[2],-83);button:SetSize(spec[3],20)
+        button:SetPoint("TOPLEFT",panel,"TOPLEFT",spec[2],-139);button:SetSize(spec[3],20)
         button:SetNormalFontObject(GameFontNormalSmall);button:SetHighlightFontObject(GameFontHighlightSmall)
         button:SetText(spec[1])
         local font=button:GetFontString()
@@ -147,13 +232,13 @@ local function makePanel()
         headings[key]=button
     end
     scroll = CreateFrame("ScrollFrame", "Atr_LogsScroll", panel, "FauxScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -110)
+    scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -164)
     scroll:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -32, 44)
     Atr_StyleAnalysisScroll(scroll,panel.results)
     scroll:SetScript("OnVerticalScroll", function(self, offset) FauxScrollFrame_OnVerticalScroll(self, offset, 20, render) end)
     for i = 1, 13 do
         local row = CreateFrame("Button", nil, panel)
-        row:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -110 - (i-1)*20)
+        row:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -164 - (i-1)*20)
         row:SetPoint("RIGHT", panel, "RIGHT", -32, 0); row:SetHeight(20)
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
         local stripe=row:CreateTexture(nil,"BACKGROUND")
@@ -182,10 +267,7 @@ local function makePanel()
         rows[i] = row
     end
     empty=text("",0,0,"GameFontNormal")
-    empty:ClearAllPoints()
-    empty:SetPoint("TOPLEFT",panel.results,"TOPLEFT",16,-34)
-    empty:SetPoint("TOPRIGHT",panel.results,"TOPRIGHT",-16,-34)
-    empty:SetJustifyH("CENTER")
+    Atr_StyleEmptyMessage(empty,panel.results)
     local close=CreateFrame("Button","Atr_LogsCloseButton",panel,"UIPanelButtonTemplate")
     Atr_AnalysisSkin(close,"Button");close:SetSize(80,22)
     close:SetPoint("BOTTOMRIGHT",panel,"BOTTOMRIGHT",-12,10);close:SetText("Close")
@@ -205,7 +287,7 @@ local function makePanel()
         restoreAHArtwork()
         if moneyWasShown and AuctionFrameMoneyFrame then AuctionFrameMoneyFrame:Show() end
         moneyWasShown = nil
-        search:ClearFocus();GameTooltip:Hide()
+        search:ClearFocus();dateFrom:ClearFocus();dateTo:ClearFocus();CloseDropDownMenus();GameTooltip:Hide()
     end)
     panel:Hide()
 end

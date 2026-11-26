@@ -4,14 +4,44 @@ local function scope(root)
     return type(root) == "table" and root[key] and root[key].records or {}
 end
 
-function Atr_GetTradingLogs(kind, query, days, character)
+function Atr_GetTradingLogCharacters()
+    local names,seen={},{}
+    for _,root in ipairs({AUCTIONATOR_PURCHASES or {},AUCTIONATOR_OWN_AUCTIONS or {}}) do
+        for _,record in ipairs(scope(root)) do
+            local name=record.character
+            if name and not seen[name] then names[#names+1]=name;seen[name]=true end
+        end
+    end
+    table.sort(names)
+    return names
+end
+
+-- Local calendar boundaries keep the entire end date, including DST changes.
+function Atr_ParseTradingLogDate(text)
+    text=(text or ""):match("^%s*(.-)%s*$")
+    if text=="" then return nil,nil end
+    local year,month,day=text:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+    year,month,day=tonumber(year),tonumber(month),tonumber(day)
+    if not year or year<1970 or year>2100 or month<1 or month>12 or day<1 or day>31 then
+        return nil,nil,"Use YYYY-MM-DD."
+    end
+    local start=time({year=year,month=month,day=day,hour=0,min=0,sec=0})
+    if not start or date("%Y-%m-%d",start)~=text then return nil,nil,"Invalid calendar date." end
+    local finish=time({year=year,month=month,day=day+1,hour=0,min=0,sec=0})
+    if not finish or finish<=start then return nil,nil,"Date is outside the supported range." end
+    return start,finish
+end
+
+function Atr_GetTradingLogs(kind, query, days, character, fromDate, untilDate)
     local result, spent, listed, boughtItems, listedItems = {}, 0, 0, 0, 0
     query = string.lower(query or "")
     local cutoff = days and time() - days * 86400 or 0
     local function collect(records, recordKind)
         if kind ~= "All" and kind ~= recordKind then return end
         for _, record in ipairs(records) do
-            if record.when >= cutoff and (not character or record.character == character)
+            local matchesCharacter=not character or (type(character)=="table" and character[record.character]==true) or record.character==character
+            if record.when >= cutoff and matchesCharacter
+                and (not fromDate or record.when>=fromDate) and (not untilDate or record.when<untilDate)
                 and (query == "" or string.find(string.lower(record.name), query, 1, true)) then
                 local stacks = record.stacks or 1
                 local quantity = record.stackSize * stacks

@@ -339,32 +339,41 @@ end
 -----------------------------------------
 
 function Atr_AddToRecents (searchText)
+    if type(searchText) ~= "string" or not searchText:find("%S") then return end
+    local recentsList = AUCTIONATOR_SHOPPING_LISTS[1];
+    if not recentsList then return end
 
-	local recentsList = AUCTIONATOR_SHOPPING_LISTS[1];
-	if (recentsList) then
+    -- Most recently used first, even if the entry was already visible. Remove
+    -- every older duplicate, including case variants in existing saved lists.
+    for index = #recentsList.items, 1, -1 do
+        if zc.StringSame(recentsList.items[index], searchText) then
+            table.remove(recentsList.items, index);
+        end
+    end
+    recentsList:AddItem(searchText);
 
-		local isRecentsShown = (gCurrentSList == recentsList);
-		
-		local n = recentsList:FindItemIndex(searchText);
-
-		if (n > 14 or (not isRecentsShown and n > 0)) then
-			table.remove (recentsList.items, n);
-		end
-		
-		n = recentsList:FindItemIndex(searchText);
-		
-		if (n == 0) then
-			recentsList:AddItem (searchText);
-		end
-		
-		if (isRecentsShown) then
-			FauxScrollFrame_SetOffset (Atr_Hlist_ScrollFrame, 0);
-			Atr_Hlist_ScrollFrame:SetVerticalScroll(0);
-		end
-		
-	end
-
+    if gCurrentSList == recentsList then
+        local pane = Atr_GetCurrentPane();
+        pane.hlistScrollOffset = 0;
+        FauxScrollFrame_SetOffset(Atr_Hlist_ScrollFrame, 0);
+        Atr_Hlist_ScrollFrame:SetVerticalScroll(0);
+        recentsList:DisplayX();
+    end
 end
+
+-- Record and repaint as soon as the new Buy search exists. Waiting for scan
+-- completion left highlighting stale; scrolling happened to trigger a repaint.
+function Atr_RecentSearchStarted(pane)
+    if pane ~= gShopPane or pane ~= Atr_GetCurrentPane() then return end
+    local search = pane.activeSearch;
+    local text = search and search.origSearchText;
+    if type(text) ~= "string" or not text:find("%S") then return end
+    if search.shplist and search.shplist == gTempShoppingList then return end
+    Atr_AddToRecents(text);
+    search.remasteredRecentsRecorded = true;
+    if gCurrentSList and not gCurrentSList.isRecents then gCurrentSList:DisplayX(); end
+end
+
 
 -----------------------------------------
 
@@ -391,7 +400,9 @@ function Atr_Shop_OnFinishScan ()
 		return  -- don't add to recents list
 	end
 	
-	Atr_AddToRecents(searchText)
+	if not currentPane.activeSearch.remasteredRecentsRecorded then
+		Atr_AddToRecents(searchText)
+	end
 
 	if (#currentPane.activeScan.sortedData > 0) then
 		currentPane.currIndex = 1;

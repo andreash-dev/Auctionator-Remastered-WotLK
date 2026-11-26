@@ -4,7 +4,9 @@ Auctionator Remastered expands the familiar Auctionator experience with an offli
 
 Developed by **Nisho** for **World of Warcraft 3.3.5a**, and tested on **Warmane**, Remastered keeps the familiar buying and selling workflow while adding new ways to explore and use your auction data.
 
-**[Download the addon](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/releases)** · **[Full patch notes](RELEASE_CHANGELOG.md)** · **[Installation](#installation)**
+**[Download the addon](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/releases)** · **[Full patch notes](https://github.com/andreash-dev/Auctionator-Remastered-WotLK/blob/main/RELEASE_CHANGELOG.md)** · **[Installation](#installation)**
+
+**Stable release: 1.0.0**
 
 ## Highlights
 
@@ -44,9 +46,16 @@ Developed by **Nisho** for **World of Warcraft 3.3.5a**, and tested on **Warmane
 ### Keep track of your activity
 
 - Review recorded purchases and auction postings in **Trading Logs**.
-- Filter by item name, activity, period and character.
+- Filter by item name, activity, multiple selected characters and preset or custom date ranges.
 - Sort records and view totals for the selected filters.
 - Track purchases during the current auction-house visit, including quantities and spending across sellers.
+
+### Value disenchanting and prospecting materials
+
+- See estimated disenchant value and prospecting value **per five ore** from saved lowest material prices.
+- Inspect possible materials, drop chances, quantity ranges and lowest unit prices.
+- Choose Shift, Control, Alt, Always or Never for each material breakdown.
+- Missing material prices show **unknown**; estimates use WotLK tables and actual server results can differ.
 
 ### A rebuilt full-scan experience
 
@@ -71,7 +80,7 @@ Developed by **Nisho** for **World of Warcraft 3.3.5a**, and tested on **Warmane
 
 ### Interface and everyday improvements
 
-- Built-in **ElvUI integration**, alongside support for the standard WoW interface.
+- Choose **Standard WoW or ElvUI styling**, with separate background-transparency controls.
 - Consistent styling for the browser, Deals, Logs and scan controls.
 - Alternating list rows, clearer sorting indicators and improved column spacing.
 - Movable auction-house window and detachable deal details.
@@ -132,13 +141,17 @@ Visit the auction house and run a fast or slow **Full Scan** to collect prices. 
 
 Price history builds as you collect observations over time. Deals may initially be empty until enough history is available for your selected filters.
 
-Items with missing categories or equipment slots are hidden by default. Enable **Show incomplete items** under **Interface → AddOns → Auctionator → Offline Browser** to include them.
+Items with missing categories or equipment slots are hidden by default. Enable **Show incomplete items** under **Interface → AddOns → Auctionator Remastered → Offline Browser** to include them.
 
 ## Warmane — fast-scan disconnects
 
 On Warmane, fast scans can occasionally end with the server disconnecting you. In our testing, this appears to be a server-side issue: fast scans often start working again later without changing the addon.
 
 If it happens, try again later. **Slow scan** is also available if you want to collect prices in the meantime.
+
+## Purchase interruptions
+
+A purchase can be rejected or time out if auction results change or the client/server interrupts the request. The cause of intermittent purchase failures observed on Warmane is not confirmed. After a purchase-confirmation timeout, check your purchase results before retrying. Batch purchases require a click for each purchase.
 
 ## Compatibility and feedback
 

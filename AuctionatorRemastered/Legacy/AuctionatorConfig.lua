@@ -14,7 +14,7 @@ function Atr_SortOptionsCategories()
     if type(categories)~="table" then return end
     local slots,panels={},{}
     for index,frame in ipairs(categories) do
-        if frame.parent=="Auctionator" then
+        if frame.parent=="Auctionator Remastered" then
             slots[#slots+1]=index;panels[#panels+1]=frame
         end
     end
@@ -40,7 +40,7 @@ Atr_LoadOptionsSubPanel_NumCalls = 0;
 function Atr_LoadOptionsSubPanel (f, name, title, subtitle)
 
 	f.name		= name
-	f.parent	= "Auctionator";
+	f.parent	= "Auctionator Remastered";
 	f.cancel	= Atr_Options_Cancel;
 
 	local frameName = f:GetName();
@@ -103,15 +103,13 @@ end
 
 function Atr_SetupOptionsFrame()
     local expText = "<html><body>"
-        .."<p>|cffffd100Auctionator Remastered by Nisho|r<br/>"
-        .."Based on Auctionator 3.1.5, created by Zirco (Thunderhorn US).</p>"
-        .."<p><br/>An updated Auctionator experience for World of Warcraft 3.3.5a.</p>"
-        .."<p><br/>|cffffd100Highlights|r<br/>"
-        .."Browse saved AH prices anywhere, with categories, favorites and price-history charts.<br/><br/>"
-        .."Compare prices with colored market percentages and clearer item tooltips.<br/><br/>"
-        .."Manage shared shopping lists and review purchase and auction-posting logs.<br/><br/>"
-        .."Explore database statistics and choose your price-history window.</p>"
-        .."<p><br/>|cffaaaaaaOriginal translation contributors: Ckaotik, StingerSoft, HellManiac, Kiskewl, Elfindor and Scars. Additional data credits: Norganna's AddOns.|r</p>"
+        .."<p>|cffffd100Remastered by Nisho|r</p>"
+        .."<p><br/>Based on Auctionator 3.1.5, created by Zirco (Thunderhorn US).</p>"
+        .."<p><br/>|cffffd100Original translation contributors|r<br/>"
+        .."Ckaotik, StingerSoft, HellManiac, Kiskewl, Elfindor and Scars.</p>"
+        .."<p><br/>|cffffd100Additional data credits|r<br/>Norganna's AddOns.</p>"
+        .."<p><br/>|cffffd100Feedback &amp; bug reports|r<br/>"
+        .."Use GitHub Issues or the comments on Warperia. Include reproduction steps, your UI setup, a screenshot and any Lua error.</p>"
         .."</body></html>";
     AuctionatorDescriptionHTML:SetText(expText);
     AuctionatorDescriptionHTML:SetSpacing(3);
@@ -123,6 +121,7 @@ end
 
 function Atr_SetDurationOptionRB(name)
 
+	if Atr_RB_N then Atr_RB_N:SetChecked(false); Atr_RB_N:Hide(); end;
 	Atr_RB_S:SetChecked (zc.StringEndsWith (name, "S"));
 	Atr_RB_M:SetChecked (zc.StringEndsWith (name, "M"));
 	Atr_RB_L:SetChecked (zc.StringEndsWith (name, "L"));
@@ -145,7 +144,7 @@ function Atr_BasicOptionsFrame_Save (frame)
 
 	AUCTIONATOR_DEFTAB			= UIDropDownMenu_GetSelectedValue(AuctionatorOption_Deftab);
 
-	AUCTIONATOR_DEF_DURATION = "N";
+	AUCTIONATOR_DEF_DURATION = "S";
 
 	if (Atr_RB_S:GetChecked())	then	AUCTIONATOR_DEF_DURATION = "S"; end;
 	if (Atr_RB_M:GetChecked())	then	AUCTIONATOR_DEF_DURATION = "M"; end;
@@ -164,6 +163,10 @@ end
 -----------------------------------------
 
 function Atr_SetupBasicOptionsFrame()
+
+	if AUCTIONATOR_DEF_DURATION ~= "S" and AUCTIONATOR_DEF_DURATION ~= "M" and AUCTIONATOR_DEF_DURATION ~= "L" then
+		AUCTIONATOR_DEF_DURATION = "S";
+	end
 
 	Atr_BasicOptionsFrame_BTitle:SetText (string.format (ZT("Basic Options for %s"), "|cffffff55"..UnitName("player")));
 
@@ -216,7 +219,10 @@ end
 function Atr_Opt_Deftab_OnShow(self)
 
 	UIDropDownMenu_Initialize		(self, Atr_Opt_Deftab_Initialize);
+ local captions={[0]="None",[1]="Sell",[2]="Buy",[3]="More"};
+ if not captions[AUCTIONATOR_DEFTAB] then AUCTIONATOR_DEFTAB=0; end;
 	UIDropDownMenu_SetSelectedValue	(self, AUCTIONATOR_DEFTAB);
+ UIDropDownMenu_SetText(self,ZT(captions[AUCTIONATOR_DEFTAB]));
 	UIDropDownMenu_JustifyText		(self, "LEFT");
 end
 
@@ -236,7 +242,10 @@ end
 function Atr_Opt_TipsShift_OnShow(self)
 
 	UIDropDownMenu_Initialize		(self, Atr_tipsShiftDD_Initialize);
+ local captions={[1]="stack price",[2]="per item price"};
+ if not captions[AUCTIONATOR_SHIFT_TIPS] then AUCTIONATOR_SHIFT_TIPS=1; end;
 	UIDropDownMenu_SetSelectedValue	(self, AUCTIONATOR_SHIFT_TIPS);
+ UIDropDownMenu_SetText(self,ZT(captions[AUCTIONATOR_SHIFT_TIPS]));
 	UIDropDownMenu_JustifyText		(self, "LEFT");
 end
 
@@ -253,7 +262,10 @@ end
 function Atr_Opt_deDetails_OnShow(self)
 
 	UIDropDownMenu_Initialize		(self, Atr_deDetailsDD_Initialize);
+ local captions={[1]="when SHIFT is held down",[2]="when CONTROL is held down",[3]="when ALT is held down",[4]="never",[5]="always"};
+ if not captions[AUCTIONATOR_DE_DETAILS_TIPS] then AUCTIONATOR_DE_DETAILS_TIPS=1; end;
 	UIDropDownMenu_SetSelectedValue	(self, AUCTIONATOR_DE_DETAILS_TIPS);
+ UIDropDownMenu_SetText(self,ZT(captions[AUCTIONATOR_DE_DETAILS_TIPS]));
 	UIDropDownMenu_SetWidth			(self, 175, 5);
 	UIDropDownMenu_JustifyText		(self, "LEFT");
 
@@ -402,6 +414,7 @@ end
 -----------------------------------------
 
 function Atr_StackingList_Display()
+    local visibleRows = Atr_StackingVisibleRows or kStackList_LinesToDisplay;
 
 	gStackList_plist = {};
 
@@ -450,7 +463,7 @@ function Atr_StackingList_Display()
 	local line;							-- 1 through NN of our window to scroll
 	local dataOffset;					-- an index into our data calculated from the scroll offset
 
-	FauxScrollFrame_Update (Atr_Stacking_ScrollFrame, totalRows, kStackList_LinesToDisplay, 16);
+	FauxScrollFrame_Update (Atr_Stacking_ScrollFrame, totalRows, visibleRows, 16);
 
 	for line = 1,kStackList_LinesToDisplay do
 
@@ -460,7 +473,7 @@ function Atr_StackingList_Display()
 
 		lineEntry:SetID (dataOffset);
 
-		if (dataOffset <= totalRows and plist[dataOffset]) then
+		if (line <= visibleRows and dataOffset <= totalRows and plist[dataOffset]) then
 
 			local lineEntry_text = _G["Atr_StackList"..line.."_text"];
 			local lineEntry_info = _G["Atr_StackList"..line.."_info"];
@@ -680,6 +693,10 @@ function Atr_ShowOptionTooltip (elem)
 
 	if (zc.StringContains (name, "Open_All_Bags")) then
 		text = ZT("If this option is checked, ALL your bags will be opened when you first open the Auctionator panel.");
+	end
+
+	if (zc.StringContains (name, "Show_StartingPrice")) then
+		text = "Show an editable starting bid on the Sell tab. This is the minimum bid another player can place, separate from the buyout price. When hidden, the starting bid is calculated from your Starting Price Discount under Selling: prices.";
 	end
 
 	if (zc.StringContains (name, "Def_Duration")) then

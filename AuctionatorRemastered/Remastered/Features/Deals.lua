@@ -17,6 +17,7 @@ end
 local function ageText(seconds)
     if seconds < 60 then return 'Now' end
     if seconds < 3600 then return math.floor(seconds/60)..' min' end
+    if seconds>=86400 then return math.floor(seconds/86400)..'d' end
     return string.format('%.1f h', seconds/3600)
 end
 local function showDetails(data)
@@ -29,12 +30,12 @@ local function showDetails(data)
     details.labels[2]:SetText('Usual price ('..Atr_GetMarketHistoryDays()..'d)')
     details.labels[5]:SetText('AH fee ('..settings().cut..'%)')
     for i,value in ipairs(details.values) do value:SetText(values[i] or '--') end
-    details.saved:SetText(data and ('Last scanned: '..date('%Y-%m-%d %H:%M',data.when)) or '')
+    details.saved:SetText(data and AuctionatorRemastered.UI.MarkPriceAge('Last scanned: '..date('%Y-%m-%d %H:%M',data.when),data.when) or '')
 end
 local function positionDetails()
     details:ClearAllPoints()
     -- Match the AH's visual size even when its scale differs from UIParent.
-    details:SetScale(panel:GetEffectiveScale()/UIParent:GetEffectiveScale())
+    details:SetScale(1)
     details:SetHeight(panel:GetHeight())
     local config=AUCTIONATOR_SAVEDVARS and AUCTIONATOR_SAVEDVARS.dealsDetailPosition
     if AuctionatorRemastered.UI.IsValidPosition(config) then
@@ -47,8 +48,8 @@ local function positionDetails()
     end
 end
 local function makeDetails()
-    details=CreateFrame('Frame','Atr_DealsDetails',UIParent)
-    details:SetSize(300,450);details:SetFrameStrata('DIALOG');details:SetClampedToScreen(true)
+    details=CreateFrame('Frame','Atr_DealsDetails',panel)
+    details:SetSize(300,450);details:SetFrameLevel(panel:GetFrameLevel()+1);details:SetClampedToScreen(true)
     details:SetMovable(true);details:EnableMouse(true);details:RegisterForDrag('LeftButton')
     details:SetScript('OnDragStart',function(self) self:StartMoving() end)
     details:SetScript('OnDragStop',function(self)
@@ -104,7 +105,7 @@ local function render()
             row.icon:SetTexture(data.texture or 'Interface\\Icons\\INV_Misc_QuestionMark')
             local color = data.market<95 and '55dd55' or (data.market<=105 and 'ffdd55' or 'ff5555')
             local values = {data.name, money(data.buy), (data.profit>0 and '|cff55dd55' or '|cffffdd55')..money(data.profit)..'|r',
-                '|cff'..color..math.floor(data.market+0.5)..'%'..(data.preliminary and '*' or '')..'|r', ageText(data.age)}
+                '|cff'..color..math.floor(data.market+0.5)..'%'..(data.preliminary and '*' or '')..'|r', AuctionatorRemastered.UI.MarkPriceAge(ageText(math.max(0,time()-data.when)),data.when)}
             for col,value in ipairs(values) do row.fields[col]:SetText(value) end
             row:Show()
         else row:Hide();row.link=nil end
@@ -175,7 +176,7 @@ local function makePanel()
     mover:RegisterForDrag('LeftButton')
     -- Reanchor the handle to the ordinary shell when the Deals overlay hides.
     mover:SetScript('OnShow',function(self)
-        local base=(AuctionFrame.backdrop and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground) and AuctionFrame.backdrop or AuctionFrame
+        local base=(AuctionatorRemastered.UI.UseElvUI() and AuctionFrame.backdrop and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground) and AuctionFrame.backdrop or AuctionFrame
         self:ClearAllPoints();self:SetPoint('TOPLEFT',base,'TOPLEFT',80,0)
         self:SetPoint('TOPRIGHT',base,'TOPRIGHT',-60,0)
     end)
@@ -202,7 +203,9 @@ local function makePanel()
     panel.sidebar:SetPoint('TOPLEFT',panel,'TOPLEFT',10,-106)
     panel.sidebar:SetPoint('BOTTOMLEFT',panel,'BOTTOMLEFT',10,40);panel.sidebar:SetWidth(142)
     local function resultStyle()
-        local source=AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
+        -- Keep the native sidebar fill above the shell, below its row artwork.
+        panel.sidebar:SetFrameLevel(panel:GetFrameLevel()+(AuctionatorRemastered.UI.UseElvUI() and 0 or 1))
+        local source=AuctionatorRemastered.UI.UseElvUI() and AuctionFrameBrowse and AuctionFrameBrowse.RightBackground
         for _,surface in ipairs({panel.results,panel.sidebar}) do
             if source and source.GetBackdrop and source:GetBackdrop() then
                 surface:SetBackdrop(source:GetBackdrop());surface:SetBackdropColor(source:GetBackdropColor())
@@ -361,10 +364,7 @@ local function makePanel()
         rows[i]=row
     end
     empty=text('',0,0,'GameFontNormal')
-    empty:ClearAllPoints()
-    empty:SetPoint('TOPLEFT',panel.results,'TOPLEFT',16,-34)
-    empty:SetPoint('TOPRIGHT',panel.results,'TOPRIGHT',-16,-34)
-    empty:SetJustifyH('CENTER')
+    Atr_StyleEmptyMessage(empty,panel.results)
     local footer=text('Saved prices per item. Check current prices in Buy. Deposits and relisting fees excluded.',20,0,'GameFontDisableSmall')
     footer:ClearAllPoints();footer:SetPoint('BOTTOMLEFT',panel,'BOTTOMLEFT',20,7)
     footer:SetWidth(650);footer:SetHeight(12);footer:SetJustifyH('LEFT')
@@ -374,7 +374,7 @@ local function makePanel()
         moneyWasShown=AuctionFrameMoneyFrame and AuctionFrameMoneyFrame:IsShown()
         if AuctionFrameMoneyFrame then AuctionFrameMoneyFrame:Hide() end
         refresh(true)
-        Atr_StyleOfflineBrowser(details,false);positionDetails();details:Show()
+        Atr_StyleOfflineBrowser(details,false,false);positionDetails();details:Show()
     end)
     panel:SetScript('OnHide',function()
         advanced:Hide();details:Hide();detailsName=nil;Atr_AnalysisEnd(artwork);artwork={}
@@ -390,6 +390,7 @@ local function makePanel()
             if dirty or ageElapsed>=60 then refresh(false) end
         end
     end)
+    AuctionatorRemastered.UI.RefreshDealsPriceAge=function() applyFilters(false) end
     panel:Hide()
     AuctionatorRemastered.UI.SetupAppearance(mover,positionDetails,settings)
 end

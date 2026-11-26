@@ -14,7 +14,7 @@ def git(*args):
 
 
 ADDON_FOLDERS = ("AuctionatorRemastered_Startup", "AuctionatorRemastered")
-RELEASE_FILES = ("README.md", "RELEASE_CHANGELOG.md")
+RELEASE_FILES = ("README.md",)
 
 
 def build(output_dir, ref="HEAD"):
@@ -36,7 +36,7 @@ def build(output_dir, ref="HEAD"):
         raise ValueError("TOC version is missing or invalid")
     version = version_match.group(1)
     if any(path not in contents for path in RELEASE_FILES):
-        raise ValueError("README or full patch notes are missing from the release")
+        raise ValueError("README is missing from the release")
     startup_toc = contents["AuctionatorRemastered_Startup/AuctionatorRemastered_Startup.toc"].decode("utf-8-sig")
     startup_version = re.search(r"^## Version:\s*(\S+)\s*$", startup_toc, re.MULTILINE)
     if not startup_version or startup_version.group(1) != version:

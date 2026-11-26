@@ -5,7 +5,10 @@ local frames,hooks={},{}
 local function widget(name)
     local f={scripts={},events={},shown=true,height=180,labels={}}
     function f:SetScript(event,fn) self.scripts[event]=fn end
-    function f:HookScript(event,fn) self.scripts[event]=fn end
+    function f:HookScript(event,fn)
+        local original=self.scripts[event]
+        self.scripts[event]=function(...)if original then original(...)end;fn(...)end
+    end
     function f:RegisterEvent(event) self.events[event]=true end
     function f:IsShown() return self.shown end
     function f:Hide() self.shown=false end
@@ -57,6 +60,9 @@ local function total(name,quantity,spent,message)
     check(actualQuantity==quantity and actualSpent==spent,message)
 end
 event('AUCTION_HOUSE_SHOW');Atr_Buy_Confirm_Frame:Show()
+request('Linen Cloth',20,999,'Blocked')
+event('ADDON_ACTION_BLOCKED','AuctionatorRemastered');ack()
+total('Linen Cloth',0,0,'blocked request must not remain pending for a later acknowledgement')
 check(Atr_Buy_Confirm_Frame.height==230,'popup reserves extra space')
 check(Atr_Buy_Part1.point[5]==90 and Atr_Buy_Part2.point[5]==90,'original buy content keeps its original height')
 check(Atr_Buy_Confirm_Frame.labels[1].text:find('0 items',1,true),'popup starts with zero bought')
@@ -142,7 +148,13 @@ function MoneyFrame_Update(name,value) moneyUpdates[name]=value end
 local buy=read('AuctionatorRemastered/Legacy/AuctionatorBuy.lua')
 assert(loadstring('local FocusTime=0;\n'..assert(buy:match('(function Atr_Buy_Confirm_Update %b().-\nend)'))))()
 function ZT(text) return text end
-assert(loadfile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua'))()
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/AuctionUI.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/AuctionUI.lua')
 gAtr_Buy_StackSize=20;gAtr_Buy_BuyoutPrice=1950000;gAtr_Buy_MaxCanBuy=3
 pane.currIndex=1;pane.activeScan.sortedData={{stackSize=20,buyoutPrice=1950000}}
 ElvUI=nil;Atr_Buy_Confirm_Frame:Hide();Atr_Buy_Confirm_Frame:Show()

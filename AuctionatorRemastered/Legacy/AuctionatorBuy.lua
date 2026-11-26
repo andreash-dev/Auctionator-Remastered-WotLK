@@ -153,6 +153,8 @@ end
 -----------------------------------------
 
 function Atr_Buy_QueueQuery (page)
+	local batch=AuctionatorRemastered and AuctionatorRemastered.BuyBatch;
+	if batch and batch.Active() then batch.QueueQuery(page);return; end
 
 	gAtr_Buy_CurPage = page;
 

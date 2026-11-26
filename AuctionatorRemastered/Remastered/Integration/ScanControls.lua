@@ -180,6 +180,17 @@ AuctionatorRemastered.Legacy.Hook("Atr_UpdateFullScanFrame",function()
     if Atr_FullScanResults:IsShown() then styleScanResults() end
 end)
 
+-- Resolve the category on click: status is registered later in the load order.
+local databaseStatus=CreateFrame("Button","Atr_FullScanDatabaseStatus",Atr_FullScanFrame,"UIPanelButtonTemplate")
+databaseStatus:SetSize(120,22)
+databaseStatus:SetPoint("BOTTOMLEFT",Atr_FullScanFrame,"BOTTOMLEFT",20,12)
+databaseStatus:SetText("Database status")
+databaseStatus:SetScript("OnClick",function()
+    if not idle() or not Atr_DatabaseStatusOptions then return end
+    Atr_FullScanFrame:Hide()
+    InterfaceOptionsFrame_OpenToCategory(Atr_DatabaseStatusOptions)
+end)
+
 -- One action row and a separate bottom Close/Done row.
 function Atr_StyleFullScanDialog()
     -- These shared styling helpers are loaded after this module. Resolve them
@@ -212,7 +223,7 @@ function Atr_StyleFullScanDialog()
     local r,g,b=Atr_FullScanFrame:GetBackdropColor()
     fill:SetVertexColor(r,g,b,1)
     Atr_UpdateFullScanCounts()
-    for _,button in ipairs({Atr_FullScanStartButton,Atr_FullScanDone,clear,undo}) do
+    for _,button in ipairs({Atr_FullScanStartButton,Atr_FullScanDone,clear,undo,databaseStatus}) do
         Atr_AnalysisSkin(button,"Button")
     end
     Atr_AnalysisSkin(slow,"CheckBox")

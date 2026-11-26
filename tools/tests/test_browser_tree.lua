@@ -27,6 +27,8 @@ local function widget(name,parent)
  function w:GetHeight() return self.height end
  function w:GetFrameLevel() return self.level or 1 end
  function w:SetFrameLevel(n) self.level=n end
+ function w:SetToplevel(value) self.toplevel=value end
+ function w:Raise() self.raises=(self.raises or 0)+1 end
  function w:SetScale(n) self.scale=n end
  function w:SetBackdrop(data) self.backdrop=data end
  function w:SetBackdropColor(...) self.backdropColor={...} end
@@ -191,16 +193,16 @@ AuctionFrame={backdrop={GetBackdrop=function() return {bgFile='log-shell'} end,G
 AuctionFrameBrowse={RightBackground={GetBackdrop=function() return {bgFile='log-list'} end,GetBackdropColor=function() return .1,.1,.1,.7 end}}
 Atr_StyleOfflineBrowser(style,false);check(style.backdrop.bgFile=='log-shell','outer frame copies Logs shell')
 Atr_StyleOfflineBrowser(style,true);check(style.backdrop.bgFile=='log-list' and style.backdropColor[4]==.7,'list frame copies Logs list colors and alpha')
-local choice=Atr_BrowserTransparentBackground
-choice:SetChecked(false);choice.scripts.OnClick(choice)
+check(Atr_BrowserTransparentBackground==nil,'opacity shortcut is removed from Browser')
+AuctionatorRemastered.UI.SetBackgroundTransparent('browser',false)
 check(AUCTIONATOR_BROWSER_SETTINGS.browserTransparent==false,'browser opacity choice saved')
 for _,surface in ipairs({Atr_OfflineBrowser,Atr_BrowserCategoryBackground,Atr_BrowserResultsBackground}) do
  check(surface.backdropColor[4]==1,'unchecked browser backgrounds are opaque')
 end
-choice:SetChecked(true);choice.scripts.OnClick(choice)
+AuctionatorRemastered.UI.SetBackgroundTransparent('browser',true)
 check(Atr_OfflineBrowser.backdropColor[4]==.8 and Atr_BrowserResultsBackground.backdropColor[4]==.8,'checked browser backgrounds share readable transparency')
 Atr_OfflineBrowser:Hide();Atr_OfflineBrowser:Show()
-check(choice:GetChecked() and Atr_OfflineBrowser.backdropColor[4]==.8,'browser preference survives reopening')
+check(Atr_OfflineBrowser.backdropColor[4]==.8,'browser preference survives reopening')
 ElvUI=nil;AuctionFrame=nil;AuctionFrameBrowse=nil
 Atr_ToggleOfflineBrowser();check(not Atr_OfflineBrowser:IsShown(),'close/toggle still hides window')
 for _,spec in ipairs({{Atr_BrowserScroll,Atr_BrowserResultsBackground},{Atr_BrowserCategoryScroll,Atr_BrowserCategoryBackground},{Atr_BrowserHistoryScroll,Atr_BrowserHistoryBounds}}) do
@@ -238,3 +240,12 @@ check(#tipLines==2 and tipLines[1]:find('Saved lowest / item',1,true),'first-hov
 itemRow.scripts.OnUpdate(itemRow)
 check(#tipLines==2,'restored pricing is not appended on every frame')
 print('PASS: first-hover tooltip rebuild and duplicate protection')
+
+AuctionatorRemastered.UI.SetBackgroundTransparent('browser',false)
+check(Atr_OfflineBrowser.backdropColor[4]==1,'Appearance changes update browser surfaces immediately')
+
+check(Atr_OfflineBrowser:GetFrameLevel()==50 and Atr_OfflineBrowser.toplevel,'Browser uses the planner window level and participates in normal top-level stacking')
+local raises=Atr_OfflineBrowser.raises or 0
+Atr_OfflineBrowser:Hide();Atr_OfflineBrowser:Show()
+check(Atr_OfflineBrowser.raises==raises+1,'reopening raises the complete Browser window above same-strata bag controls')
+print('PASS: Browser root level, top-level stacking and raise on reopen')

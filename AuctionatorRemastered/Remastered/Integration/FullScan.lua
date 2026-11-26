@@ -24,7 +24,7 @@ function S.LayoutProgress(active)
         Atr_FullScanHTML:Hide()
         if not S.hiddenControls then
             S.hiddenControls={}
-            for _,name in ipairs({"Atr_FullScanStartButton","Atr_ClearDBButton","Atr_UndoClearDBButton","Atr_SlowScanChoice","Atr_FullScanDone"}) do
+            for _,name in ipairs({"Atr_FullScanStartButton","Atr_ClearDBButton","Atr_UndoClearDBButton","Atr_SlowScanChoice","Atr_FullScanDone","Atr_FullScanDatabaseStatus"}) do
                 local control=_G[name]
                 if control then
                     S.hiddenControls[#S.hiddenControls+1]={control=control,shown=control:IsShown()}
@@ -164,7 +164,8 @@ local function finish(result)
     Atr_UpdateFullScanFrame()
     -- UI refreshes may change the status; retain the result's actual outcome.
     status(result.complete and "Scan complete!" or result.stopped and "Scan stopped. Collected prices saved (partial scan)." or "Partial scan saved. Some auction data was missing.")
-    Atr_FullScanMoreDetails()
+    if not result.complete or AuctionatorRemastered.UI.ScanNotification("message") then Atr_FullScanMoreDetails() end
+    if result.complete and AuctionatorRemastered.UI.ScanNotification("sound") then PlaySound("ReadyCheck") end
     Atr_Broadcast_DBupdated(result.identified+result.unresolved,"fullscan")
     -- Empty the client's bulk buffer when possible. Completion never depends
     -- on this optional cleanup request, and no forced full collection is needed.

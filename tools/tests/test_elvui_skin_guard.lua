@@ -13,16 +13,16 @@ function skins:AddCallbackForAddon(addon,name,fn,force)
  return 'passed through'
 end
 local original=skins.AddCallbackForAddon
-local engine={GetModule=function() return skins end,UnregisterCallback=function(self,name) assert(name=='Auctionator');removed=removed+1 end}
+local engine={GetModule=function() return skins end,UnregisterCallback=function() error('the callback target cannot unregister itself') end}
 ElvUI={engine}
 assert(loadstring(guard))()
-assert(removed==1 and not callbacks.Auctionator and callbacks.Other and #callbacks.CallPriority==1)
+assert(removed==0 and not callbacks.Auctionator and callbacks.Other and #callbacks.CallPriority==1)
 assert(skins:AddCallbackForAddon('Auctionator','Auctionator',function() error('legacy callback ran') end,true)==nil)
 assert(originalCalls==0)
 assert(skins:AddCallbackForAddon('Blizzard_AuctionUI','Skin_Blizzard_AuctionUI',function() end,true)=='passed through')
 assert(skins:AddCallbackForAddon('Auctionator','Other')=='passed through')
 assert(originalCalls==2)
-local wrapped=skins.AddCallbackForAddon;event();assert(skins.AddCallbackForAddon==wrapped and removed==1)
+local wrapped=skins.AddCallbackForAddon;event();assert(skins.AddCallbackForAddon==wrapped and removed==0)
 ElvUI=nil;assert(loadstring(guard))()
 skins.AddCallbackForAddon=original;skins.atrRemasteredSkinGuard=nil
 ElvUI={engine};event()

@@ -53,6 +53,7 @@ function AtrPane:DoSearch (searchText, IDstring, itemLink, rescanThreshold)
 	self.UINeedsUpdate = false;		-- will be set when scan finishes
 			
 	self.activeSearch = Atr_NewSearch (searchText, IDstring, itemLink, rescanThreshold);
+	if Atr_RecentSearchStarted then Atr_RecentSearchStarted(self); end
 	
 	if (IDstring) then
 		self.activeScan = self.activeSearch:GetFirstScan();

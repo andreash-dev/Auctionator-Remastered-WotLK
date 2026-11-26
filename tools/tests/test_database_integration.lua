@@ -117,6 +117,8 @@ Atr_UpdateFullScanFrame=noop;Atr_ClearBrowseListings=noop
 dofile('AuctionatorRemastered/Remastered/Integration/FullScan.lua')
 local scanDriver=frames[#frames-1]
 Atr_Init=noop;Atr_ScanningConfigFrame_Update=noop;Atr_ScanningOptionsFrame=widget()
+function Atr_NewSearch() return {} end -- Constructor is outside this staged-scan harness.
+dofile('AuctionatorRemastered/Remastered/Models/DatabaseStats.lua')
 dofile('AuctionatorRemastered/Remastered/Data/DatabaseStats.lua')
 local scan=AuctionatorRemastered.FullScan
 local function drainScan() for i=1,1000 do if not scan.running then return end;scan.Tick() end;error('scan did not finish') end

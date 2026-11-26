@@ -31,7 +31,13 @@ Atr_Hilite1=widget(805,341)
 Atr_Hilite1_btn=widget(805,341)
 function Atr_IsTabSelected() return false end
 ElvUI={}
-assert(loadfile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua'))()
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/AuctionUI.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/AuctionUI.lua')
 local n=0
 local function check(ok,msg) n=n+1;assert(ok,msg) end
 hooks.Atr_UpdateUI()

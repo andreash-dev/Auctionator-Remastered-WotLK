@@ -181,6 +181,7 @@ UIDropDownMenu_Initialize(dropdown, function()
         info.func = function()
             AUCTIONATOR_MARKET_HISTORY_DAYS = selectedDays
             UIDropDownMenu_SetSelectedValue(dropdown, selectedDays)
+            UIDropDownMenu_SetText(dropdown, selectedDays.." days")
             updateAuctionator()
             if Atr_RefreshBrowseMarketSort then Atr_RefreshBrowseMarketSort() end
         end
@@ -189,6 +190,7 @@ UIDropDownMenu_Initialize(dropdown, function()
 end)
 dropdown:SetScript("OnShow", function()
     UIDropDownMenu_SetSelectedValue(dropdown, Atr_GetMarketHistoryDays())
+    UIDropDownMenu_SetText(dropdown, Atr_GetMarketHistoryDays().." days")
 end)
 
 -- Browse-only presentation sort. Auction indices used by purchases and the scan
@@ -330,7 +332,7 @@ local function fitBrowseRarityHeader(enabled)
     -- Its middle stretches between Left and Right, so moving Right also ends
     -- the background before Market %, without moving Level or later columns.
     local right=_G.BrowseQualitySortRight
-    if right and not ElvUI then
+    if right and not AuctionatorRemastered.UI.UseElvUI() then
         if not saved.rightPoints then
             saved.rightPoints={}
             if right.GetNumPoints then
@@ -387,7 +389,7 @@ local function styleBrowseMarketHeader()
     -- ElvUI's native sort headers use Toolkit.StyleButton's color texture.
     -- Build that exact highlight directly, even if the older skin callback
     -- stopped before assigning StyleButton/hover to the reference button.
-    if ElvUI then
+    if AuctionatorRemastered.UI.UseElvUI() then
         -- AuctionSortButtonTemplate supplies a three-piece vanilla column tab.
         -- ElvUI strips these on Blizzard's headers; this later-created header
         -- needs the same cleanup without touching its font, arrow or hover.

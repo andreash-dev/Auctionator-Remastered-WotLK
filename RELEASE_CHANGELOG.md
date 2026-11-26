@@ -4,6 +4,80 @@ A remastered edition of Auctionator 3.1.5 for World of Warcraft: Wrath of the Li
 
 **Auctionator Remastered by Nisho.** Based on the original Auctionator by **Zirco (Thunderhorn US)**. Original contributor credits are retained.
 
+## 1.0.0 — 2026-11-26
+
+The first stable release of Auctionator Remastered for WoW 3.3.5a. The sections below describe the changes since 0.9.0-beta.2; the rest of this document retains the broader Remastered feature history.
+
+### Buying and recent searches
+
+- Replace the inherited batch-buy loop with an acknowledgement-driven queue. Each purchase requires a user click; subsequent purchases are prepared after server responses and refreshed auction results.
+- Match item identity, stack size, buyout price and applicable seller information before submitting a purchase. Do not reuse a stale row index after auctions move or disappear.
+- Count confirmed purchases rather than treating submitted requests as successful purchases. Bound query and confirmation waits, stop on interruptions, and offer a user-driven Refresh when results do not advance.
+- Keep the selected quantity and cumulative purchase progress in the existing purchase dialog.
+- Keep recent searches in most-recent-first order, avoid case-only duplicates, highlight the active search immediately, and preserve scroll position when a search finishes.
+- Align Search, Advanced, Full Scan and Options, with matching search-field and Recent Searches dropdown styling.
+- Style the existing purchase/error message window for Standard WoW and ElvUI; wrap long messages and retain acknowledgement and mask behavior.
+
+### Disenchanting and Jewelcrafting
+
+- Calculate disenchant estimates from the latest saved lowest prices of output materials, looked up by item ID even when client names are not cached.
+- Support all seven Lesser/Greater essence pairs in both directions at three lesser essences per greater essence, using the cheaper direct or converted equivalent when available.
+- Normalize outcome probabilities and retain intermediate fractions until the expected-value calculation is complete. Missing or invalid material prices show unknown instead of a misleading incomplete total.
+- Mark estimates based on old, partial-scan or undated material prices.
+- Add prospecting estimates per five ore for Copper, Tin, Iron, Mithril, Thorium, Fel Iron, Adamantite, Cobalt, Saronite and Titanium. Include the applicable powders and independent additional gem rolls.
+- Show possible materials, drop chances, quantity ranges and each material's saved lowest unit price in both material breakdowns.
+- Give prospecting its own value checkbox and independent Shift, Control, Alt, Always and Never material-detail choices. Group the Tooltips page into general prices, disenchanting and prospecting.
+- Use AzerothCore WotLK loot tables for prospecting estimates. Actual server rates may differ. Material values are gross estimates before AH fees, rather than guaranteed returns.
+
+### Trading Logs
+
+- Add Today alongside 7 days, 30 days and All time.
+- Add From/To date filters in YYYY-MM-DD format; include the entire end date. Validate invalid dates and reversed ranges without applying a broken filter.
+- Replace the single-character checkbox with a multiple-selection character dropdown, including All characters and Only this character shortcuts.
+- Combine character, date, item-name and activity filters. Recalculate displayed spending, listed value and item quantities for the selected results.
+- Add Reset filters and align both filter rows. Keep the ledgers scoped to the selected realm and faction.
+
+### Appearance and settings
+
+- Add an explicit Standard WoW / ElvUI preference, applied after Reload UI. Selecting Standard WoW suppresses the conflicting Auctionator/auction-house skin paths without disabling unrelated ElvUI skins.
+- Add independent background-transparency controls for the auction house, Offline Browser and Shopping Planner. Keep text, icons, buttons and borders at their normal opacity.
+- Match the native Sell sidebar bounds to Buy/Undercuts. Extend hover and selected-row highlights only into unused sidebar space; keep visible scrollbar controls clear in both themes.
+- Center empty-view guidance and use a consistent orange color across the updated views.
+- Fit the settings pages into the original Interface options window. Align fields, dropdown captions and labels without relying on another addon's options-window resizer.
+- Retain all Database status information in compact cards and add hover help for Last complete. Simplify About to credits, feedback links and version information.
+- Fix Offline Browser/bag frame interleaving by raising the Browser as a complete top-level window.
+- Add an old-price warning shared by Offline Browser and Deals. Its default is one day; it marks prices without hiding or deleting them.
+- Add independent Full Scan chat-summary and completion-sound preferences. Chat summaries default on; sounds default off. Cancelled, failed and partial scans do not play the completion sound.
+- Require confirmation when lowering the history-retention setting. Keep the previous limit if the confirmation is cancelled; changing the setting does not immediately prune data.
+
+### Reviewed first-install defaults
+
+| Setting | Default |
+| --- | --- |
+| Alt shortcut / open all bags | On / On |
+| Starting Price on Sell | Off |
+| Auction duration / initial tab | 12 hours / None |
+| Browse Market % / Full Scan chat summary / sound | On / On / Off |
+| Vendor, AH, disenchant and prospecting values | On |
+| Shift price mode / DE and JC breakdowns | Stack price / while Shift is held |
+| Minimum scan quality | Poor (all) |
+| Market comparison / history retention | 14 days / 30 days |
+| Mark saved prices as old | After 1 day |
+| Show incomplete Browser items | Off |
+| Stacking category overrides | None; default behavior |
+| Starting-bid discount | 5% |
+
+- Retain existing valid saved preferences; these defaults do not reset an upgraded user's settings.
+- Automatically use ElvUI when available unless Standard WoW was explicitly chosen. Browser transparency defaults on in ElvUI and off in Standard WoW; Shopping Planner defaults opaque. Auction-house backgrounds retain their native/skin defaults unless overridden.
+- Retain the existing undercut thresholds: above 500g → 1g, 100g → 25s, 20g → 10s, 5g → 5s, 1g → 2s, 20s → 1s, and 5s → 5c.
+
+### Organization, validation and known limitations
+
+- Keep inherited engine code under Legacy, with Remastered behavior separated into Models, Data, UI, Integration and Features. Split auction layout/dialogs, shared settings, Database status and prospecting into focused modules.
+- Validate load references, XML includes, Lua 5.1 syntax and model boundaries. Regression coverage includes database identity, purchases, confirmed postings, scanning, filters, saved preferences, material estimates and both UI themes.
+- Purchase requests can still be rejected or time out during live play. Auction availability may change, and server/client restrictions can interrupt a batch; the exact cause of intermittent Warmane purchase failures is not confirmed. Check purchase results before retrying after a confirmation timeout.
+- Existing Remastered prices and preferences are preserved. Replace both addon folders and restart WoW completely when updating to load the new files.
+
 ## 0.9.0-beta.2 — 2026-11-21
 
 ### Interface
@@ -38,15 +112,7 @@ A remastered edition of Auctionator 3.1.5 for World of Warcraft: Wrath of the Li
 - Search saved item names without sending an auction query or loading the auction-house interface.
 - Added an expandable category tree with item counts, subcategories and equipment slots, such as Armor → Cloth → Head.
 - Group chest pieces and robes under the same Chest slot.
-- Added scrolling for long category trees and consistent indentation for categories, subcateg
-Latest res
-Latest response
-
-Latest response
-
-Latest response
-ponse
-ories and slots.
+- Added scrolling for long category trees and consistent indentation for categories, subcategories and slots.
 - Added account-wide favorites with clickable stars and a dedicated Favorites view.
 - Search and sort favorites using the same controls as the rest of the browser.
 - Added sortable columns for item name, lowest saved price per item, reference price, Market % and update age.
@@ -133,7 +199,7 @@ ories and slots.
 - Left-click a deal to open its price chart; right-click to switch to Buy and search the exact item.
 - Prevent the Buy handoff during an active full scan.
 - Shift-click bag items to fill Deals search without first focusing the search field.
-- Added centered, yellow empty-result guidance matching Browse's presentation.
+- Added centered empty-result guidance, now using the shared orange presentation.
 - Clarified the footer: prices are saved per-item values, current prices should be checked in Buy, and deposits/relisting fees are excluded.
 
 ## Shopping lists and planning
@@ -309,7 +375,7 @@ ories and slots.
 - First installation starts with a clean Remastered database. Old Auctionator SavedVariables remain untouched and are not imported.
 - Later updates preserve Remastered data. Unknown database versions are reported without automatically wiping them.
 - Release packages contain addon files, not personal WTF settings, scanned account data or trading logs.
-- Release ZIPs include both addon folders, the README and full patch notes.
+- Release ZIPs include both addon folders and the README. Detailed patch notes are maintained in this GitHub document.
 - Restart WoW fully after installing new addon files. Later edits to already loaded Lua files normally need only `/reload`.
 
 ## Current limitations

@@ -5,7 +5,16 @@ local function stats()
     local key = GetRealmName().."_"..UnitFactionGroup("player")
     local root = AUCTIONATOR_DATABASE_STATS
     if type(root[key]) ~= "table" then root[key] = {since = time(), scans = 0, fast = 0, slow = 0} end
-    return root[key]
+    local record=root[key]
+    if type(record.durations)~="table" then
+        record.durations={}
+        -- The previous version retained only its last timing; preserve that
+        -- one real sample without inventing timings for older scan totals.
+        if type(record.duration)=="number" and record.duration>=0 and record.duration<math.huge then
+            record.durations[1]=record.duration
+        end
+    end
+    return record
 end
 
 function Atr_GetFullScanCounts()
@@ -13,28 +22,20 @@ function Atr_GetFullScanCounts()
     return tonumber(record.fast) or 0,tonumber(record.slow) or 0
 end
 
+local Model=AuctionatorRemastered.Models.DatabaseStats
+local function rows()
+    if Atr_DatabaseRows then return Atr_DatabaseRows(gAtr_ScanDB) end
+    return pairs(type(gAtr_ScanDB)=="table" and gAtr_ScanDB or {})
+end
+function Atr_GetFullScanMedianDuration()
+    return Model.Median(stats().durations)
+end
 function Atr_GetDatabaseCoverage()
-    local uniqueDays, oldest, newest, samples = {}, nil, nil, 0
-    if type(gAtr_ScanDB) == "table" then
-        for _, item in pairs(gAtr_ScanDB) do
-            if type(item) == "table" then
-                -- One H entry per item/day. L is an optional second price,
-                -- not another observation or another scan.
-                for key, value in pairs(item) do
-                    local day = type(key) == "string" and tonumber(key:match("^H(%d+)$"))
-                    if day and type(value) == "number" and value > 0 then
-                        uniqueDays[day] = true
-                        samples = samples + 1
-                        oldest = not oldest and day or math.min(oldest, day)
-                        newest = not newest and day or math.max(newest, day)
-                    end
-                end
-            end
-        end
-    end
-    local days = 0
-    for _ in pairs(uniqueDays) do days = days + 1 end
-    return days, oldest, newest, samples
+    return Model.Coverage(rows())
+end
+function Atr_GetDatabaseOverview()
+    local iterate,state,seed=rows()
+    return Model.Overview(iterate,state,seed,time())
 end
 
 local scanStart, scanMode
@@ -53,6 +54,10 @@ AuctionatorRemastered.Legacy.Hook("Atr_Broadcast_DBupdated", function(num, kind)
     if scanMode then record[scanMode] = (record[scanMode] or 0) + 1 end
     record.last = time()
     record.duration = scanStart and math.max(0, time() - scanStart) or nil
+    if record.duration then
+        record.durations[#record.durations+1]=record.duration
+        while #record.durations>100 do table.remove(record.durations,1) end
+    end
     record.items = num
     record.auctions = Atr_FSR_scanned_count and tonumber(Atr_FSR_scanned_count:GetText()) or nil
     scanStart, scanMode = nil, nil
@@ -70,36 +75,12 @@ AuctionatorRemastered.Legacy.Hook("Atr_Init", function()
     end
 end)
 
-local panel = Atr_ScanningOptionsFrame
-local info = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-info:SetPoint("TOPLEFT", panel, "TOPLEFT", 30, -350)
-info:SetWidth(440); info:SetJustifyH("LEFT")
-info:SetSpacing(4)
-local function dayDate(day)
-    return day and date("%Y-%m-%d", gScanHistDayZero + day * 86400) or "No history"
-end
-local function stamp(value)
-    return value and date("%Y-%m-%d %H:%M", value) or "None recorded"
-end
-local function update()
-    local record = stats()
-    local days, oldest, newest, samples = Atr_GetDatabaseCoverage()
-    local lines = {
-        "Price history: "..dayDate(oldest).." to "..dayDate(newest),
-        "Days with data: "..days.."   |   Item/day records: "..samples,
-        "Scan tracking started: "..stamp(record.since),
-        "Full scans recorded: "..(record.scans or 0).."   (Fast: "..(record.fast or 0)..", Slow: "..(record.slow or 0)..")",
-        "Last recorded full scan: "..stamp(record.last),
-    }
-    local health=Atr_GetDatabaseHealth and Atr_GetDatabaseHealth()
-    if health then
-        table.insert(lines,1,"Database: Remastered v"..health.schemaVersion.." | Identified variants: "..health.identified.." | Unresolved names: "..health.unresolved)
-        lines[#lines+1]="Last complete scan: "..stamp(health.lastCompleteScan).." | Ambiguous names: "..health.ambiguous
-    end
-    if record.last then
-        lines[#lines + 1] = "Last scan: "..(record.auctions or "?").." auctions, "..(record.items or "?").." items"..(record.duration and ", "..record.duration.." sec" or "")
-    end
-    info:SetText(table.concat(lines, "\n"))
-end
-panel:HookScript("OnShow", update)
-AuctionatorRemastered.Legacy.Hook("Atr_ScanningConfigFrame_Update", update)
+-- Count actual search objects, not auction-query pages or retries. Existing
+-- scan totals stay intact; search tracking starts with this update.
+AuctionatorRemastered.Legacy.Hook("Atr_NewSearch",function()
+    local record=stats()
+    record.searches=(tonumber(record.searches) or 0)+1
+    record.searchesSince=record.searchesSince or time()
+end)
+
+AuctionatorRemastered.DatabaseStats={Get=stats}

@@ -286,7 +286,7 @@ engDEnames [LESSER_ASTRAL]		= "Lesser Astral Essence";
 
 engDEnames [GREATER_ASTRAL]		= "Greater Astral Essence";
 engDEnames [SOUL_DUST]			= "Soul Dust";
-engDEnames [LARGE_GLIMMERING]	= "Large Glimmering Essence";
+engDEnames [LARGE_GLIMMERING]	= "Large Glimmering Shard";
 
 engDEnames [LESSER_MYSTIC]		= "Lesser Mystic Essence";
 engDEnames [GREATER_MYSTIC]		= "Greater Mystic Essence";
@@ -297,8 +297,8 @@ engDEnames [LARGE_GLOWING]		= "Large Glowing Shard";
 engDEnames [LESSER_NETHER]		= "Lesser Nether Essence";
 engDEnames [GREATER_NETHER]		= "Greater Nether Essence";
 engDEnames [DREAM_DUST]			= "Dream Dust";
-engDEnames [SMALL_RADIANT]		= "Small Radiant";
-engDEnames [LARGE_RADIANT]		= "Large Radiant";
+engDEnames [SMALL_RADIANT]		= "Small Radiant Shard";
+engDEnames [LARGE_RADIANT]		= "Large Radiant Shard";
 
 engDEnames [SMALL_BRILLIANT]	= "Small Brilliant Shard";
 engDEnames [LARGE_BRILLIANT]	= "Large Brilliant Shard";
@@ -440,31 +440,48 @@ end
 
 -----------------------------------------
 
-function Atr_GetAuctionPriceDE (itemID)  -- same as Atr_GetAuctionPrice but understands that some "lesser" essences are convertible with "greater"
+-- Prices are keyed by material ID, independent of item-name cache/locale.
+local function DEPriceInfo(itemID)
+ local price=Atr_GetAuctionPrice(itemID);
+ if type(price)~="number" or price~=price or price<=0 or price==math.huge then return nil; end
+ local record=Atr_DatabaseRecord and Atr_DatabaseRecord(itemID);
+ if not record and type(gAtr_ScanDB)=="table" then
+  local name=GetItemInfo(itemID);
+  record=name and gAtr_ScanDB[name];
+ end
+ local stamp=record and record.lastScan;
+ local now=time and time();
+ return price,{sourceID=itemID,partial=record and record._partial or false,
+  stale=type(stamp)=="number" and type(now)=="number" and now-stamp>86400 or false,
+  undated=type(stamp)~="number"};
+end
 
-	local lesserPrice;
-	local greaterPrice;
-	
-	if (itemID == LESSER_CEL) then
-		lesserPrice  = Atr_GetAuctionPrice (Atr_GetDEitemName (LESSER_CEL));
-		greaterPrice = Atr_GetAuctionPrice (Atr_GetDEitemName (GREATER_CEL));
-	end
-	
-	if (itemID == LESSER_COSMIC) then
-		lesserPrice  = Atr_GetAuctionPrice (Atr_GetDEitemName (LESSER_COSMIC));
-		greaterPrice = Atr_GetAuctionPrice (Atr_GetDEitemName (GREATER_COSMIC));
-	end
-	
-	if (itemID == LESSER_PLANAR) then
-		lesserPrice  = Atr_GetAuctionPrice (Atr_GetDEitemName (LESSER_PLANAR));
-		greaterPrice = Atr_GetAuctionPrice (Atr_GetDEitemName (GREATER_PLANAR));
-	end
-	
-	if (lesserPrice ~= nil and greaterPrice ~= nil and lesserPrice * 3 > greaterPrice) then
-		return math.floor (greaterPrice / 3);
-	end
-	
-	return Atr_GetAuctionPrice (Atr_GetDEitemName (itemID));
+-- 3 Lesser <-> 1 Greater. Both directions work with only one quoted market.
+-- Use the cheaper equivalent quote as a conservative gross valuation, retaining
+-- fractions until the final expected-value rounding. No AH cut is included.
+local essencePairs={
+ {LESSER_MAGIC,GREATER_MAGIC},{LESSER_ASTRAL,GREATER_ASTRAL},
+ {LESSER_MYSTIC,GREATER_MYSTIC},{LESSER_NETHER,GREATER_NETHER},
+ {LESSER_ETERNAL,GREATER_ETERNAL},{LESSER_PLANAR,GREATER_PLANAR},
+ {LESSER_COSMIC,GREATER_COSMIC},
+};
+function Atr_GetAuctionPriceDE(itemID)
+ if type(itemID)~="number" then return nil; end
+ local price,info=DEPriceInfo(itemID);
+ for _,pair in ipairs(essencePairs) do
+  local other,multiplier;
+  if itemID==pair[1] then other,multiplier=pair[2],1/3;
+  elseif itemID==pair[2] then other,multiplier=pair[1],3; end
+  if other then
+   local alternate,alternateInfo=DEPriceInfo(other);
+   if alternate and (not price or alternate*multiplier<price) then
+    price,info=alternate*multiplier,alternateInfo;
+    info.converted=true;
+   end
+   break;
+  end
+ end
+ return price,info;
 end
 
 -----------------------------------------
@@ -556,9 +573,9 @@ function Atr_InitDETable()
 	DEtableInsert (t, {36, 40,		20, {1,2}, VISION_DUST,		75, {1,2}, GREATER_MYSTIC,	5, 1, LARGE_GLOWING});
 	DEtableInsert (t, {41, 45,		20, {2,5}, VISION_DUST,		75, {1,2}, LESSER_NETHER,	5, 1, SMALL_RADIANT});
 	DEtableInsert (t, {46, 50,		20, {1,2}, DREAM_DUST,		75, {1,2}, GREATER_NETHER,	5, 1, LARGE_RADIANT});
-	DEtableInsert (t, {51, 55,		22, {2,5}, DREAM_DUST,		75, {1,2}, LESSER_ETERNAL,	5, 1, SMALL_BRILLIANT});
-	DEtableInsert (t, {56, 60,		22, {1,2}, ILLUSION_DUST,	75, {1,2}, GREATER_ETERNAL,	5, 1, LARGE_BRILLIANT});
-	DEtableInsert (t, {61, 65,		22, {2,5}, ILLUSION_DUST,	75, {2,3}, GREATER_ETERNAL,	5, 1, LARGE_BRILLIANT});
+	DEtableInsert (t, {51, 55,		22, {2,5}, DREAM_DUST,		75, {1,2}, LESSER_ETERNAL,	3, 1, SMALL_BRILLIANT});
+	DEtableInsert (t, {56, 60,		22, {1,2}, ILLUSION_DUST,	75, {1,2}, GREATER_ETERNAL,	3, 1, LARGE_BRILLIANT});
+	DEtableInsert (t, {61, 65,		22, {2,5}, ILLUSION_DUST,	75, {2,3}, GREATER_ETERNAL,	3, 1, LARGE_BRILLIANT});
 	DEtableInsert (t, {66, 99,		22, {2,3}, ARCANE_DUST,		75, {2,3}, LESSER_PLANAR,	3, 1, SMALL_PRISMATIC});
 	DEtableInsert (t, {100, 120,	22, {2,5}, ARCANE_DUST,		75, {1,2}, GREATER_PLANAR,	3, 1, LARGE_PRISMATIC});
 	DEtableInsert (t, {121, 151,	22, {1,3}, INFINITE_DUST,	75, {1,2}, LESSER_COSMIC,	3, 1, SMALL_DREAM});
@@ -614,20 +631,21 @@ function Atr_InitDETable()
 	DEtableInsert (t, {56, 60,		100, 1, NEXUS_CRYSTAL});
 --	DEtableInsert (t, {61, 80,  FILLED IN BELOW
 	DEtableInsert (t, {95, 100,		100, {1,2}, VOID_CRYSTAL});
-	DEtableInsert (t, {105, 164,	33.3, 1, VOID_CRYSTAL,	66.6, 2, VOID_CRYSTAL});
+	DEtableInsert (t, {105, 164,	100/3, 1, VOID_CRYSTAL,	200/3, 2, VOID_CRYSTAL});
 	DEtableInsert (t, {165, 280,	100, 1, ABYSS_CRYSTAL});
   
 	deTable[deKey(WEAPON, EPIC)] = {};
 	zc.CopyDeep (deTable[deKey(WEAPON, EPIC)], deTable[deKey(ARMOR, EPIC)]);	-- copy it this time because of differences
 
 	DEtableInsert (deTable[deKey(ARMOR,  EPIC)], {61, 80,	50,   1, NEXUS_CRYSTAL, 	50,   2, NEXUS_CRYSTAL});
-	DEtableInsert (deTable[deKey(WEAPON, EPIC)], {61, 80,	33.3, 1, NEXUS_CRYSTAL, 	66.6, 2, NEXUS_CRYSTAL});
+	DEtableInsert (deTable[deKey(WEAPON, EPIC)], {61, 80,	100/3, 1, NEXUS_CRYSTAL, 	200/3, 2, NEXUS_CRYSTAL});
 
 end
 
 -----------------------------------------
 
 local function Atr_FindDEentry (itemType, itemRarity, itemLevel)
+ if type(itemRarity)~="number" or type(itemLevel)~="number" then return nil; end
 
 	local itemTypeNum = Atr_ItemType2AuctionClass (itemType);
 
@@ -650,26 +668,37 @@ end
 
 -----------------------------------------
 
-function Atr_AddDEDetailsToTip (tip, itemType, itemRarity, itemLevel)
-
-	local ta = Atr_FindDEentry (itemType, itemRarity, itemLevel);
-
-	if (ta) then
-		local x;
-		for x = 3,#ta,3 do
-			local percent = math.floor (ta[x]*100) / 100;
-
-			local deitem = Atr_GetDEitemName(ta[x+2]);
-			if (deitem == nil) then
-				deitem = "???";
-			end
-
-			if (percent > 0) then
-				tip:AddLine ("  |cFFFFFFFF"..percent.."%|r   "..ta[x+1].." "..deitem)
-			end
-		end
-	end
-
+function Atr_AddDEDetailsToTip(tip,itemType,itemRarity,itemLevel)
+ local ta=Atr_FindDEentry(itemType,itemRarity,itemLevel);
+ if not ta then return; end
+ -- The stored rows split quantity ranges into individual equiprobable outcomes.
+ -- Recombine them for display: one chance and quantity range per material.
+ local materials,byID={},{};
+ for x=3,#ta,3 do
+  local chance,quantity,id=ta[x],ta[x+1],ta[x+2];
+  if chance>0 then
+   local entry=byID[id];
+   if not entry then
+    entry={id=id,chance=0,minimum=quantity,maximum=quantity};
+    byID[id]=entry;materials[#materials+1]=entry;
+   end
+   entry.chance=entry.chance+chance;
+   entry.minimum=math.min(entry.minimum,quantity);
+   entry.maximum=math.max(entry.maximum,quantity);
+  end
+ end
+ if #materials==0 then return; end
+ tip:AddLine(" ");
+ tip:AddDoubleLine("Disenchant materials","Lowest / item",1,.45,.8,1,.45,.8);
+ for _,entry in ipairs(materials) do
+  local quantity=tostring(entry.minimum);
+  if entry.maximum~=entry.minimum then quantity=quantity.."–"..entry.maximum; end
+  local chance=math.floor(entry.chance*100+.5)/100;
+  local price=Atr_GetAuctionPrice(entry.id);
+  local text="|cFFAAAAAAunknown|r";
+  if type(price)=="number" and price==price and price>0 and price<math.huge then text="|cFFFFFFFF"..zc.priceToMoneyString(math.floor(price)).."|r"; end
+  tip:AddDoubleLine(string.format("%g %% - %s × %s",chance,Atr_GetDEitemName(entry.id) or "???",quantity),text,1,.45,.8,1,1,1);
+ end
 end
 
 -----------------------------------------
@@ -695,29 +724,37 @@ end
 
 -----------------------------------------
 
-function Atr_CalcDisenchantPrice (itemType, itemRarity, itemLevel)
-
-	if (Atr_IsWeaponType (itemType) or Atr_IsArmorType (itemType)) then
-		if (itemRarity == UNCOMMON or itemRarity == RARE or itemRarity == EPIC) then
-
-			local dePrice = 0;
-
-			local ta = Atr_FindDEentry (itemType, itemRarity, itemLevel);
-			if (ta) then
-				local x;
-				for x = 3,#ta,3 do
-					local price = Atr_GetAuctionPriceDE (ta[x+2]);
-					if (price) then
-						dePrice = dePrice + (ta[x] * ta[x+1] * price);
-					end
-				end
-			end
-
-			return math.floor (dePrice/100);
-		end
-	end
-	
-	return nil;		-- can't be disenchanted
+function Atr_CalcDisenchantPrice(itemType,itemRarity,itemLevel)
+ if not (Atr_IsWeaponType(itemType) or Atr_IsArmorType(itemType)) then return nil; end
+ if itemRarity~=UNCOMMON and itemRarity~=RARE and itemRarity~=EPIC then return nil; end
+ if type(itemLevel)~="number" then return nil; end
+ local ta=Atr_FindDEentry(itemType,itemRarity,itemLevel);
+ if not ta then return nil; end
+ local total,probability=0,0;
+ local status={supported=true,complete=true,missing={},partial=false,stale=false,undated=false};
+ -- Resolve each material once even if its count range expanded into many rows.
+ local quoted={};
+ for x=3,#ta,3 do
+  local id=ta[x+2];local quote=quoted[id];
+  if not quote then
+   local price,info=Atr_GetAuctionPriceDE(id);
+   quote={price=price,info=info};quoted[id]=quote;
+   if not price then status.complete=false;status.missing[#status.missing+1]=id; end
+  end
+  probability=probability+ta[x];
+  if quote.price then
+   total=total+ta[x]*ta[x+1]*quote.price/100;
+   local info=quote.info or {};
+   status.partial=status.partial or info.partial or false;
+   status.stale=status.stale or info.stale or false;
+   status.undated=status.undated or info.undated or false;
+  end
+ end
+ -- Refuse a misleading total if data is missing or a future table edit breaks
+ -- normalization. Material details remain available separately in the tooltip.
+ if math.abs(probability-100)>.000001 then status.complete=false;status.invalidTable=true; end
+ if not status.complete then return nil,status; end
+ return math.floor(total+.000000001),status;
 end
 
 -----------------------------------------
@@ -771,18 +808,23 @@ end
 
 -----------------------------------------
 
-function Atr_STWP_AddBasicDEInfo (tip, xstring, dePrice)
-	
-	if (AUCTIONATOR_D_TIPS == 1 and dePrice ~= nil) then
-		if (dePrice > 0) then
-			tip:AddDoubleLine (ZT("Disenchant")..xstring, "|cFFFFFFFF"..zc.priceToMoneyString(dePrice));
-		else
-			tip:AddDoubleLine (ZT("Disenchant")..xstring, "|cFFFFFFFF"..ZT("unknown").."  ");
-		end
-	end
-
+function Atr_STWP_AddBasicDEInfo(tip,xstring,dePrice,status)
+ if AUCTIONATOR_D_TIPS~=1 then return; end
+ if dePrice==nil and not (status and status.supported) then return; end
+ local label=ZT("Disenchant")..xstring;
+ if status and not status.complete then
+  tip:AddDoubleLine(label,"|cFFAAAAAA"..ZT("unknown").."|r");
+  tip:AddLine(status.invalidTable and "Disenchant material data is invalid." or "Missing material prices; scan the auction house.",1,.82,0,true);
+  return;
+ end
+ if status then
+  if status.partial then label=label.." (partial scan)";
+  elseif status.stale then label=label.." (old prices)";
+  elseif status.undated then label=label.." (undated prices)"; end
+ end
+ tip:AddDoubleLine(label,dePrice and dePrice>0 and ("|cFFFFFFFF"..zc.priceToMoneyString(dePrice).."|r") or ("|cFFAAAAAA"..ZT("unknown").."|r"));
 end
-	
+
 -----------------------------------------
 
 function Atr_STWP_GetPrices (link, num, showStackPrices, itemVendorPrice, itemName, itemType, itemRarity, itemLevel)
@@ -790,10 +832,11 @@ function Atr_STWP_GetPrices (link, num, showStackPrices, itemVendorPrice, itemNa
 	local vendorPrice	= 0;
 	local auctionPrice	= 0;
 	local dePrice		= nil;
+ local deStatus;
 	
 	if (AUCTIONATOR_V_TIPS == 1) then vendorPrice	= itemVendorPrice; end;
 	if (AUCTIONATOR_A_TIPS == 1) then auctionPrice	= Atr_GetAuctionPrice (Atr_DatabaseHandles and Atr_DatabaseHandles() and link or itemName); end;
-	if (AUCTIONATOR_D_TIPS == 1) then dePrice		= Atr_CalcDisenchantPrice (itemType, itemRarity, itemLevel); end;
+	if (AUCTIONATOR_D_TIPS == 1) then dePrice,deStatus = Atr_CalcDisenchantPrice (itemType, itemRarity, itemLevel); end;
 	
 	if (num and showStackPrices) then
 		if (auctionPrice)	then	auctionPrice = auctionPrice * num;	end;
@@ -805,7 +848,7 @@ function Atr_STWP_GetPrices (link, num, showStackPrices, itemVendorPrice, itemNa
 		vendorPrice = 0;
 	end
 
-	return vendorPrice, auctionPrice, dePrice;
+	return vendorPrice, auctionPrice, dePrice, deStatus;
 
 end
 
@@ -835,7 +878,7 @@ function Atr_ShowTipWithPricing (tip, link, num)
 	end
 
 
-	local vendorPrice, auctionPrice, dePrice = Atr_STWP_GetPrices (link, num, showStackPrices, itemVendorPrice, itemName, itemType, itemRarity, itemLevel);
+	local vendorPrice, auctionPrice, dePrice, deStatus = Atr_STWP_GetPrices (link, num, showStackPrices, itemVendorPrice, itemName, itemType, itemRarity, itemLevel);
 
 	-- vendor info
 
@@ -871,7 +914,7 @@ function Atr_ShowTipWithPricing (tip, link, num)
 
 	-- disenchanting info
 
-	Atr_STWP_AddBasicDEInfo (tip, xstring, dePrice)
+	Atr_STWP_AddBasicDEInfo (tip, xstring, dePrice, deStatus)
 
 	local showDetails = true;
 	
@@ -881,7 +924,7 @@ function Atr_ShowTipWithPricing (tip, link, num)
 	if (AUCTIONATOR_DE_DETAILS_TIPS == 4) then showDetails = false; end;
 	if (AUCTIONATOR_DE_DETAILS_TIPS == 5) then showDetails = true; end;
 	
-	if (showDetails and dePrice ~= nil) then
+	if (showDetails and itemRarity and itemLevel) then
 		Atr_AddDEDetailsToTip (tip, itemType, itemRarity, itemLevel)
 	end
 	

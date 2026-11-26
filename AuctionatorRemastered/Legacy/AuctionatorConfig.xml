@@ -5,7 +5,7 @@
 	<Frame name="Atr_UIOptionsFrame">
 		<Scripts>
 			<OnLoad>
-				self.name = "Auctionator"
+				self.name = "Auctionator Remastered"
 				InterfaceOptions_AddCategory(self);
 			</OnLoad>
 			<OnShow>
@@ -157,7 +157,7 @@
 				<Size><AbsDimension x="250" y="25"/>	</Size>
 				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-220"/></Offset></Anchor></Anchors>
 				<Frames>
-					<CheckButton name="Atr_RB_N" inherits="UIRadioButtonTemplate">
+					<CheckButton name="Atr_RB_N" inherits="UIRadioButtonTemplate" hidden="true">
 						<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="10" y="0"/></Offset></Anchor></Anchors>
 						<Scripts>
 							<OnLoad> _G[self:GetName().."Text"]:SetText("None"); </OnLoad>

@@ -11,8 +11,8 @@ local function widget(name)
  function w:SetFrameLevel(level) self.level=level end
  function w:EnableMouse(value) self.mouse=value end
  function w:IsShown() return self.shown end
- function w:Show() self.shown=true end
- function w:Hide() self.shown=false end
+ function w:Show() self.shown=true;if self.OnShow then self.OnShow(self) end end
+ function w:Hide() self.shown=false;if self.OnHide then self.OnHide(self) end end
  function w:GetWidth() return self.width end
  function w:GetHeight() return self.height end
  function w:SetWidth(v) self.width=v end
@@ -22,7 +22,10 @@ local function widget(name)
  function w:SetPoint(...) table.insert(self.points,{...}) end
  function w:RegisterEvent() end
  function w:SetScript(event,fn) self[event]=fn end
+ function w:HookScript(event,fn) local old=self[event];self[event]=function(...) if old then old(...) end;fn(...) end end
  function w:GetRegions() return unpack(self.regions or {}) end
+ function w:GetHighlightTexture() self.hover=self.hover or widget();return self.hover end
+ function w:GetPushedTexture() self.selected=self.selected or widget();return self.selected end
  function w:GetObjectType() return 'Texture' end
  function w:GetTexture() return self.texture end
  function w:SetTexture(value) self.texture=value end
@@ -54,7 +57,12 @@ end
 local function read(path) local f=assert(io.open(path));local s=f:read('*a');f:close();return s end
 dofile('AuctionatorRemastered/Remastered/UI/Theme.lua')
 
-assert(loadfile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua'))()
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionLayout.lua')
+dofile('AuctionatorRemastered/Remastered/UI/AuctionDialogs.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/ElvUI.lua')
+dofile('AuctionatorRemastered/Remastered/Integration/AuctionUI.lua')
 local checks=0
 local function check(v,label) checks=checks+1;assert(v,label) end
 -- Standard UI must receive the correction, too (the old scheduler was ElvUI-only).
@@ -94,3 +102,25 @@ local themedEdge=widget();themedEdge.width=5;themedEdge.texture='Interface\\Tool
 Atr_Hlist.regions={divider,themedEdge};driver.OnUpdate(driver)
 check(themedEdge:IsShown(),'new theme border survives repeated styling')
 print('PASS: '..checks..' native/ElvUI sidebar background, gutter, row bounds and callback checks')
+
+for i=1,20 do
+ local row=_G['AuctionatorHEntry'..i]
+ for _,fill in ipairs({row.hover,row.selected}) do
+  check(fill.points[1][2]==row and fill.points[2][2]==row and fill.points[2][4]==26,'row fill reaches sidebar inner edge across gutter')
+ end
+end
+print('PASS: hover and selected fills span the full sidebar while row click bounds stay unchanged')
+
+for _,theme in ipairs({'native','elvui'}) do
+ AuctionatorRemastered.UI.themeMode=theme
+ for _,shown in ipairs({true,false,true}) do
+  if shown then bar:Show() else bar:Hide() end
+  check(driver:IsShown(),'scroll visibility changes schedule row layout')
+  driver.OnUpdate(driver)
+  for i=1,20 do
+   local row=_G['AuctionatorHEntry'..i]
+   check(row.hover.points[2][4]==(shown and 2 or 26) and row.selected.points[2][4]==(shown and 2 or 26),'hover and selection avoid visible scrollbar in '..theme)
+  end
+ end
+end
+print('PASS: native/ElvUI highlights shorten with visible scrollbar and expand when hidden')

@@ -52,7 +52,7 @@ function UIDropDownMenu_Initialize(w,fn) dropdowns[#dropdowns+1]=fn end
 function UIDropDownMenu_CreateInfo() return {} end
 local choices={}
 function UIDropDownMenu_AddButton(info) choices[#choices+1]=info.value end
-UIDropDownMenu_SetWidth=noop;UIDropDownMenu_SetSelectedValue=noop
+UIDropDownMenu_SetWidth=noop;UIDropDownMenu_SetSelectedValue=noop;UIDropDownMenu_JustifyText=noop
 function InterfaceOptions_AddCategory(w) categories[#categories+1]=w.name end
 function PanelTemplates_SetNumTabs(w,n) w.numTabs=n end
 function PanelTemplates_TabResize(w) w.width=#(w.text or "")*7+32 end
