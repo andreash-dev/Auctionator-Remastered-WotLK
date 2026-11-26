@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Validate addon and regressions
         run: |
           sudo apt-get update -qq
@@ -35,7 +36,19 @@ jobs:
           python3 tools/check_addon.py --tests
       - name: Build and verify installation ZIP
         id: package
-        run: python3 tools/build_release.py --github-output "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^## Version: *//p' AuctionatorRemastered/AuctionatorRemastered.toc | tr -d '\r')"
+          release_ref=HEAD
+          if git rev-parse -q --verify "refs/tags/v$version^{commit}" >/dev/null; then
+            release_ref="refs/tags/v$version"
+            # Packaging fixes may rebuild an existing release, but cannot change its addon code.
+            git diff --quiet "$release_ref" HEAD -- AuctionatorRemastered AuctionatorRemastered_Startup || {
+              echo "Addon content changed without a new version; refusing to replace release assets."; exit 1;
+            }
+          fi
+          python3 tools/build_release.py --ref "$release_ref" --github-output "$GITHUB_OUTPUT"
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}

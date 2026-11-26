@@ -8,6 +8,10 @@ A remastered edition of Auctionator 3.1.5 for World of Warcraft: Wrath of the Li
 
 The first stable release of Auctionator Remastered for WoW 3.3.5a. The sections below describe the changes since 0.9.0-beta.2; the rest of this document retains the broader Remastered feature history.
 
+### Installation package
+
+- Keep only `AuctionatorRemastered/` and `AuctionatorRemastered_Startup/` in the installation ZIP root. Documentation is available on GitHub, outside the download package.
+
 ### Buying and recent searches
 
 - Replace the inherited batch-buy loop with an acknowledgement-driven queue. Each purchase requires a user click; subsequent purchases are prepared after server responses and refreshed auction results.
@@ -375,7 +379,7 @@ The first stable release of Auctionator Remastered for WoW 3.3.5a. The sections 
 - First installation starts with a clean Remastered database. Old Auctionator SavedVariables remain untouched and are not imported.
 - Later updates preserve Remastered data. Unknown database versions are reported without automatically wiping them.
 - Release packages contain addon files, not personal WTF settings, scanned account data or trading logs.
-- Release ZIPs include both addon folders and the README. Detailed patch notes are maintained in this GitHub document.
+- Release ZIPs contain only the two addon folders at the root, for addon-manager compatibility. README and detailed patch notes remain on GitHub.
 - Restart WoW fully after installing new addon files. Later edits to already loaded Lua files normally need only `/reload`.
 
 ## Current limitations

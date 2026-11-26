@@ -14,17 +14,16 @@ def git(*args):
 
 
 ADDON_FOLDERS = ("AuctionatorRemastered_Startup", "AuctionatorRemastered")
-RELEASE_FILES = ("README.md",)
 
 
 def build(output_dir, ref="HEAD"):
-    paths = git("ls-tree", "-r", "--name-only", ref, "--", *(name + "/" for name in ADDON_FOLDERS), *RELEASE_FILES).decode().splitlines()
+    paths = git("ls-tree", "-r", "--name-only", ref, "--", *(name + "/" for name in ADDON_FOLDERS)).decode().splitlines()
     for name in ADDON_FOLDERS:
         if f"{name}/{name}.toc" not in paths:
             raise ValueError(f"Required addon folder is missing from Git: {name}")
     contents = {path: git("show", f"{ref}:{path}") for path in paths}
     for path in paths:
-        if (Path(path).parts[0] not in ADDON_FOLDERS and path not in RELEASE_FILES) or ".." in Path(path).parts:
+        if Path(path).parts[0] not in ADDON_FOLDERS or ".." in Path(path).parts:
             raise ValueError(f"Unexpected archive path: {path}")
         if any(part.lower() in {"wtf", "savedvariables", "backups", ".git"} for part in Path(path).parts):
             raise ValueError(f"Private/generated directory in package: {path}")
@@ -35,8 +34,6 @@ def build(output_dir, ref="HEAD"):
     if not version_match:
         raise ValueError("TOC version is missing or invalid")
     version = version_match.group(1)
-    if any(path not in contents for path in RELEASE_FILES):
-        raise ValueError("README is missing from the release")
     startup_toc = contents["AuctionatorRemastered_Startup/AuctionatorRemastered_Startup.toc"].decode("utf-8-sig")
     startup_version = re.search(r"^## Version:\s*(\S+)\s*$", startup_toc, re.MULTILINE)
     if not startup_version or startup_version.group(1) != version:
@@ -58,6 +55,8 @@ def build(output_dir, ref="HEAD"):
             info.external_attr = 0o100644 << 16
             bundle.writestr(info, contents[path], compresslevel=9)
     with zipfile.ZipFile(archive) as bundle:
+        if {Path(path).parts[0] for path in bundle.namelist()} != set(ADDON_FOLDERS):
+            raise ValueError("Installation ZIP must contain only the two addon folders")
         if bundle.testzip() is not None or set(bundle.namelist()) != set(contents):
             raise ValueError("Archive verification failed")
     return {
